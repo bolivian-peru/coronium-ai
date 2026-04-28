@@ -27,6 +27,7 @@ import { balanceRoutes } from "./routes/balance.js";
 import { depositRoutes } from "./routes/deposit.js";
 import { tariffsRoutes } from "./routes/tariffs.js";
 import { proxyRoutes } from "./routes/proxies.js";
+import { chatRoutes } from "./routes/chat.js";
 import { upstream, UpstreamError } from "./upstream/client.js";
 
 export async function buildApp() {
@@ -97,6 +98,7 @@ export async function buildApp() {
       await api.register(balanceRoutes);
       await api.register(depositRoutes);
       await api.register(tariffsRoutes);
+      await api.register(chatRoutes);
       await api.register(proxyRoutes);
     },
     { prefix: "/v1" },
