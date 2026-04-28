@@ -14,7 +14,7 @@ async function run(args: string[]): Promise<{ stdout: string; stderr: string; co
   }
 }
 
-describe("@coronium/cli", () => {
+describe("coronium-cli", () => {
   it("--version prints semver", async () => {
     const r = await run(["--version"]);
     expect(r.stdout.trim()).toMatch(/^\d+\.\d+\.\d+/);

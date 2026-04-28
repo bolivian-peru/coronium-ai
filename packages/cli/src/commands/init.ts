@@ -1,6 +1,6 @@
 import kleur from "kleur";
 import prompts from "prompts";
-import { Coronium } from "@coronium/sdk-ts";
+import { Coronium } from "coronium-sdk";
 import { CONFIG_FILE, getBaseUrl, loadConfig, saveConfig } from "../config.js";
 
 export async function initCommand(opts: { email?: string; apiKey?: string }): Promise<void> {

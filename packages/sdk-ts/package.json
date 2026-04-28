@@ -1,5 +1,5 @@
 {
-  "name": "@coronium/sdk-ts",
+  "name": "coronium-sdk",
   "version": "0.1.0-alpha.0",
   "description": "Typed TypeScript client for the Coronium mobile-proxy API.",
   "license": "Apache-2.0",

@@ -1,4 +1,4 @@
-# @coronium/mock-api
+# coronium-mock-api
 
 Tiny Express mock server implementing `coronium-ai/openapi.yaml`. **Not** the production API. For local CLI / MCP / SDK testing only.
 

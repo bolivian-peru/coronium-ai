@@ -1,4 +1,4 @@
-# @coronium/mcp
+# coronium-mcp
 
 Model Context Protocol server for [Coronium](https://coronium.ai) — buy and manage mobile (4G/5G) proxies from Claude Code, Claude Desktop, Cursor, Windsurf, or any MCP host.
 
@@ -7,7 +7,7 @@ Model Context Protocol server for [Coronium](https://coronium.ai) — buy and ma
 ### Claude Code
 
 ```bash
-claude mcp add coronium npx -y @coronium/mcp
+claude mcp add coronium npx -y coronium-mcp
 # Then export CORONIUM_API_KEY in your shell, or set `env` on the MCP entry.
 ```
 
@@ -20,7 +20,7 @@ Add to your MCP config (`~/.claude.json`, `~/.cursor/mcp.json`, etc.):
   "mcpServers": {
     "coronium": {
       "command": "npx",
-      "args": ["-y", "@coronium/mcp"],
+      "args": ["-y", "coronium-mcp"],
       "env": {
         "CORONIUM_API_KEY": "sk_live_..."
       }
@@ -47,7 +47,7 @@ Restart your host. The agent will auto-discover all 7 tools.
 ## Get an API key
 
 ```bash
-npm install -g @coronium/cli
+npm install -g coronium-cli
 coronium init       # creates the account, stores the key locally
 ```
 

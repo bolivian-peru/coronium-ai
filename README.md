@@ -1,9 +1,9 @@
 # coronium-ai
 
 [![ci](https://github.com/bolivian-peru/coronium-ai/actions/workflows/ci.yml/badge.svg)](https://github.com/bolivian-peru/coronium-ai/actions/workflows/ci.yml)
-[![npm @coronium/cli](https://img.shields.io/npm/v/@coronium/cli.svg?label=%40coronium%2Fcli)](https://www.npmjs.com/package/@coronium/cli)
-[![npm @coronium/mcp](https://img.shields.io/npm/v/@coronium/mcp.svg?label=%40coronium%2Fmcp)](https://www.npmjs.com/package/@coronium/mcp)
-[![npm @coronium/sdk-ts](https://img.shields.io/npm/v/@coronium/sdk-ts.svg?label=%40coronium%2Fsdk-ts)](https://www.npmjs.com/package/@coronium/sdk-ts)
+[![npm coronium-cli](https://img.shields.io/npm/v/coronium-cli.svg?label=coronium-cli)](https://www.npmjs.com/package/coronium-cli)
+[![npm coronium-mcp](https://img.shields.io/npm/v/coronium-mcp.svg?label=coronium-mcp)](https://www.npmjs.com/package/coronium-mcp)
+[![npm coronium-sdk](https://img.shields.io/npm/v/coronium-sdk.svg?label=coronium-sdk)](https://www.npmjs.com/package/coronium-sdk)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
 Agent-native interfaces to [Coronium](https://coronium.ai) — a CLI for humans, an MCP server for AI hosts, a typed SDK for everyone else, and a local mock API to test against. Three published packages, one OpenAPI spec, seven verbs.
@@ -14,11 +14,11 @@ coronium-ai/
 ├── llms.txt                     ← agent self-discovery (will be served at coronium.ai/llms.txt)
 ├── AGENTS.md                    ← agent host instructions (will be served at coronium.ai/AGENTS.md)
 ├── packages/
-│   ├── sdk-ts/                  ← @coronium/sdk-ts — typed TypeScript client
-│   ├── cli/                     ← @coronium/cli   — `coronium proxy get …`
-│   └── mcp/                     ← @coronium/mcp   — MCP server (Claude / Cursor / Windsurf)
+│   ├── sdk-ts/                  ← coronium-sdk — typed TypeScript client
+│   ├── cli/                     ← coronium-cli   — `coronium proxy get …`
+│   └── mcp/                     ← coronium-mcp   — MCP server (Claude / Cursor / Windsurf)
 ├── apps/
-│   └── api/                     ← @coronium/mock-api — local Express mock for testing
+│   └── api/                     ← coronium-mock-api — local Express mock for testing
 ├── scripts/
 │   └── doctor.mjs               ← pre-publish sanity check
 └── .github/workflows/ci.yml     ← typecheck + build + test + doctor + dry-run publish
@@ -30,12 +30,12 @@ coronium-ai/
 
 ```bash
 # Human developer
-npm install -g @coronium/cli
+npm install -g coronium-cli
 coronium init
 coronium proxy get --country US --type 5g
 
 # AI agent (Claude Code / Claude Desktop / Cursor / Windsurf)
-claude mcp add coronium npx -y @coronium/mcp
+claude mcp add coronium npx -y coronium-mcp
 # (set CORONIUM_API_KEY in the MCP env)
 ```
 
@@ -109,12 +109,11 @@ Same surface in all three. If a verb stops being needed, it's deprecated in all 
 
 Before you `pnpm publish:alpha`:
 
-1. **Reserve the npm scope** — `npm org create coronium` (or skip and publish under a personal scope first).
-2. **Log in** — `npm login` (uses 2FA if your account has it on).
-3. **Bump the version** if you've changed anything since the last publish — edit each `packages/*/package.json` `version` field. Pre-1.0 we publish under the `alpha` tag.
-4. **Run the doctor** — `pnpm doctor` (also runs as part of `publish:dry`).
-5. **Dry-run** — `pnpm publish:dry` (verifies tarballs, file lists, no leftover debris).
-6. **Real publish** — `pnpm publish:alpha`.
+1. **Log in** — `npm login` (uses 2FA if your account has it on).
+2. **Bump the version** if you've changed anything since the last publish — edit each `packages/*/package.json` `version` field. Pre-1.0 we publish under the `alpha` tag.
+3. **Run the doctor** — `pnpm doctor` (also runs as part of `publish:dry`).
+4. **Dry-run** — `pnpm publish:dry` (verifies tarballs, file lists, no leftover debris).
+5. **Real publish** — `pnpm publish:alpha`.
 
 The doctor catches: missing `dist/`, leftover `.tgz`, secret-shaped strings, production IPs/hostnames, missing LICENSE, wrong `publishConfig.access`. CI runs it on every push.
 
@@ -126,7 +125,7 @@ When you're ready for `latest` instead of `alpha`, change `publish:alpha` to `pn
 
 To embed the same agent surface in your `coronium.ai` site:
 
-1. **Install commands** — show `npm install -g @coronium/cli` and `claude mcp add coronium npx -y @coronium/mcp` prominently above the fold.
+1. **Install commands** — show `npm install -g coronium-cli` and `claude mcp add coronium npx -y coronium-mcp` prominently above the fold.
 2. **Live demo** — the existing CLI chat agent (currently at `dashboard.coronium.io/cli`) is the demo. Move that route to `coronium.ai/cli` or embed the same React component.
 3. **Static drops** — copy `llms.txt` and `AGENTS.md` to your site root so they're reachable at `coronium.ai/llms.txt` and `coronium.ai/AGENTS.md`.
 4. **OpenAPI** — host `openapi.yaml` at `api.coronium.ai/openapi.yaml`. Tools like Swagger UI / Redoc render it with one line.

@@ -10,7 +10,7 @@ import { fileURLToPath } from "node:url";
 const distPath = fileURLToPath(new URL("../dist/index.js", import.meta.url));
 const source = readFileSync(distPath, "utf8");
 
-describe("@coronium/mcp", () => {
+describe("coronium-mcp", () => {
   it("registers all 8 tools by name", () => {
     const expected = [
       "balance_get",

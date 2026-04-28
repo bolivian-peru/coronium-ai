@@ -1,13 +1,13 @@
-# @coronium/sdk-ts
+# coronium-sdk
 
 Typed TypeScript client for the [Coronium](https://coronium.ai) mobile 4G/5G proxy API.
 
 ```bash
-npm install @coronium/sdk-ts
+npm install coronium-sdk
 ```
 
 ```ts
-import { Coronium } from "@coronium/sdk-ts";
+import { Coronium } from "coronium-sdk";
 
 const c = new Coronium({ apiKey: process.env.CORONIUM_API_KEY! });
 
@@ -41,7 +41,7 @@ c.proxies.replace(id)          // POST /proxies/{id}/replace
 All non-2xx responses throw `CoroniumError` with a stable `code` field. Stock-outs throw the more specific `CoroniumStockOutError` which exposes `suggestions` (alternative country/carrier in stock).
 
 ```ts
-import { CoroniumStockOutError } from "@coronium/sdk-ts";
+import { CoroniumStockOutError } from "coronium-sdk";
 try {
   await c.proxies.buy({ country: "US", carrier: "tmobile" });
 } catch (e) {

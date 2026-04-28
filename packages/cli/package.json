@@ -1,5 +1,5 @@
 {
-  "name": "@coronium/cli",
+  "name": "coronium-cli",
   "version": "0.1.0-alpha.0",
   "description": "Coronium CLI — buy and manage mobile (4G/5G) proxies from your shell.",
   "license": "Apache-2.0",
@@ -45,7 +45,7 @@
     "provenance": false
   },
   "dependencies": {
-    "@coronium/sdk-ts": "workspace:*",
+    "coronium-sdk": "workspace:*",
     "commander": "12.1.0",
     "kleur": "4.1.5",
     "prompts": "2.4.2",

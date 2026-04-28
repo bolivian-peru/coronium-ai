@@ -10,7 +10,7 @@ TypeScript SDK, the Python SDK, or raw REST — they all hit the same API.
 
 ```bash
 # Best path for AI hosts (Claude Code, Claude Desktop, Cursor, Windsurf):
-claude mcp add coronium npx -y @coronium/mcp
+claude mcp add coronium npx -y coronium-mcp
 # Then set CORONIUM_API_KEY in the MCP env.
 ```
 
@@ -28,7 +28,7 @@ claude mcp add coronium npx -y @coronium/mcp
 ## The 7 verbs you actually need
 
 ```ts
-import { Coronium } from "@coronium/sdk-ts";
+import { Coronium } from "coronium-sdk";
 const c = new Coronium({ apiKey: process.env.CORONIUM_API_KEY! });
 
 await c.balance.get();
@@ -68,9 +68,9 @@ If you cloned this repo:
 
 - `pnpm install` at the repo root
 - `pnpm dev:api` — boot the local mock at http://127.0.0.1:5050
-- `pnpm -F @coronium/cli dev` — run the CLI from source
-- `pnpm -F @coronium/mcp dev` — run the MCP server in stdio mode
-- `pnpm -F @coronium/sdk-ts build` — emit the typed client into `dist/`
+- `pnpm -F coronium-cli dev` — run the CLI from source
+- `pnpm -F coronium-mcp dev` — run the MCP server in stdio mode
+- `pnpm -F coronium-sdk build` — emit the typed client into `dist/`
 - The OpenAPI spec at `openapi.yaml` is the source of truth. If you change a
   verb here, you change it in the API, the SDK, the CLI, and the MCP — in
   that order.

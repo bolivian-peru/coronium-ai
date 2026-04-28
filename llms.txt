@@ -4,11 +4,11 @@ Mobile 4G/5G proxies in 20+ countries. Pay-per-hour USDC. Agent-native API.
 
 ## How agents use this
 
-- **MCP server** (Claude / Cursor / Windsurf): `npx -y @coronium/mcp` — env: `CORONIUM_API_KEY`
+- **MCP server** (Claude / Cursor / Windsurf): `npx -y coronium-mcp` — env: `CORONIUM_API_KEY`
 - **REST API**: https://api.coronium.ai/v1/  (OpenAPI: https://api.coronium.ai/openapi.yaml)
-- **TypeScript SDK**: `npm install @coronium/sdk-ts`
+- **TypeScript SDK**: `npm install coronium-sdk`
 - **Python SDK**: `pip install coronium-sdk`
-- **CLI** (humans): `npm install -g @coronium/cli`
+- **CLI** (humans): `npm install -g coronium-cli`
 
 ## Quickstart (60 seconds, no human-in-the-loop)
 

@@ -1,5 +1,5 @@
 import kleur from "kleur";
-import type { Chain } from "@coronium/sdk-ts";
+import type { Chain } from "coronium-sdk";
 import { makeClient } from "../client.js";
 import { isJsonMode, printJson } from "../format.js";
 

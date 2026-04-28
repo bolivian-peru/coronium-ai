@@ -1,9 +1,9 @@
-# @coronium/cli
+# coronium-cli
 
 Mobile 4G/5G proxies from your shell. Pay-per-hour USDC. No password, no email verification.
 
 ```bash
-npm install -g @coronium/cli
+npm install -g coronium-cli
 coronium init                                     # create account, store key
 coronium proxy get --country US --type 5g         # buy a proxy
 coronium proxy rotate px_01HX...                  # rotate IP (verified)

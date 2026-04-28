@@ -5,13 +5,13 @@ import {
   CallToolRequestSchema,
   ListToolsRequestSchema,
 } from "@modelcontextprotocol/sdk/types.js";
-import { Coronium, CoroniumError, CoroniumStockOutError } from "@coronium/sdk-ts";
+import { Coronium, CoroniumError, CoroniumStockOutError } from "coronium-sdk";
 import { z } from "zod";
 
 const apiKey = process.env.CORONIUM_API_KEY;
 if (!apiKey) {
   console.error(
-    "[coronium-mcp] CORONIUM_API_KEY is required. Get one at https://coronium.ai or run `npx -y @coronium/cli init`.",
+    "[coronium-mcp] CORONIUM_API_KEY is required. Get one at https://coronium.ai or run `npx -y coronium-cli init`.",
   );
   process.exit(2);
 }

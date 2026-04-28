@@ -1,5 +1,5 @@
 import kleur from "kleur";
-import type { Proxy } from "@coronium/sdk-ts";
+import type { Proxy } from "coronium-sdk";
 
 export function printProxy(p: Proxy): void {
   const httpUrl = `http://${p.username}:${p.password}@${p.host}:${p.port_http}`;

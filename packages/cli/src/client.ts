@@ -1,4 +1,4 @@
-import { Coronium } from "@coronium/sdk-ts";
+import { Coronium } from "coronium-sdk";
 import kleur from "kleur";
 import { getApiKey, getBaseUrl, loadConfig } from "./config.js";
 

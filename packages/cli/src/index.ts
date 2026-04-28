@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import { Command } from "commander";
 import kleur from "kleur";
-import { CoroniumError } from "@coronium/sdk-ts";
+import { CoroniumError } from "coronium-sdk";
 import { initCommand } from "./commands/init.js";
 import { balanceCommand } from "./commands/balance.js";
 import { depositCommand } from "./commands/deposit.js";

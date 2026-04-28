@@ -1,6 +1,6 @@
 import kleur from "kleur";
-import type { ProxyType } from "@coronium/sdk-ts";
-import { CoroniumStockOutError } from "@coronium/sdk-ts";
+import type { ProxyType } from "coronium-sdk";
+import { CoroniumStockOutError } from "coronium-sdk";
 import { makeClient } from "../client.js";
 import { isJsonMode, printJson, printProxy } from "../format.js";
 

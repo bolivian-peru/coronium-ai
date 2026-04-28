@@ -13,7 +13,7 @@
     "typecheck": "pnpm -r build",
     "test": "pnpm -r build && vitest run",
     "test:watch": "vitest",
-    "dev:api": "pnpm -F @coronium/mock-api dev",
+    "dev:api": "pnpm -F coronium-mock-api dev",
     "doctor": "node scripts/doctor.mjs",
     "publish:dry": "pnpm doctor && pnpm -r --filter './packages/**' publish --dry-run --access public --no-git-checks",
     "publish:alpha": "pnpm doctor && pnpm -r --filter './packages/**' publish --tag alpha --access public"

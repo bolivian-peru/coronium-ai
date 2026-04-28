@@ -1,5 +1,5 @@
 {
-  "name": "@coronium/mcp",
+  "name": "coronium-mcp",
   "version": "0.1.0-alpha.0",
   "description": "Coronium MCP server — buy and manage mobile (4G/5G) proxies from Claude, Cursor, Windsurf, or any MCP host.",
   "license": "Apache-2.0",
@@ -50,7 +50,7 @@
     "provenance": false
   },
   "dependencies": {
-    "@coronium/sdk-ts": "workspace:*",
+    "coronium-sdk": "workspace:*",
     "@modelcontextprotocol/sdk": "1.0.4",
     "zod": "3.23.8"
   },
