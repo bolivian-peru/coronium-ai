@@ -8,14 +8,18 @@ export interface AccountRow {
   daily_cap_cents: number;
   session_cap_cents: number;
   upstream_user_id: string | null;
+  wallet_address: string | null;
+  wallet_chain: string;
   deleted_at: number | null;
 }
 
 export function insertAccount(row: AccountRow): void {
   db()
     .prepare(
-      `INSERT INTO accounts (id, email, created_at, deposit_addr, daily_cap_cents, session_cap_cents, upstream_user_id, deleted_at)
-       VALUES (@id, @email, @created_at, @deposit_addr, @daily_cap_cents, @session_cap_cents, @upstream_user_id, @deleted_at)`,
+      `INSERT INTO accounts
+        (id, email, created_at, deposit_addr, daily_cap_cents, session_cap_cents, upstream_user_id, wallet_address, wallet_chain, deleted_at)
+       VALUES
+        (@id, @email, @created_at, @deposit_addr, @daily_cap_cents, @session_cap_cents, @upstream_user_id, @wallet_address, @wallet_chain, @deleted_at)`,
     )
     .run(row);
 }
@@ -30,4 +34,13 @@ export function getAccountByEmail(email: string): AccountRow | undefined {
   return db()
     .prepare("SELECT * FROM accounts WHERE email = ? AND deleted_at IS NULL")
     .get(email) as AccountRow | undefined;
+}
+
+export function getAccountByWallet(walletAddress: string, chain = "evm"): AccountRow | undefined {
+  return db()
+    .prepare(
+      `SELECT * FROM accounts
+       WHERE wallet_address = ? AND wallet_chain = ? AND deleted_at IS NULL`,
+    )
+    .get(walletAddress.toLowerCase(), chain) as AccountRow | undefined;
 }

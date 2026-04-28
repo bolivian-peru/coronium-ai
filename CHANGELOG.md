@@ -6,6 +6,31 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 
 ## [unreleased]
 
+### Added — wallet-bound voucher signup (EVM + SIWE)
+
+Every account is now anchored to an EVM keypair. Signup is voucher-gated and proven via [EIP-4361](https://eips.ethereum.org/EIPS/eip-4361) (SIWE) signatures. See [`docs/AUTH_DESIGN.md`](./docs/AUTH_DESIGN.md) for the full design.
+
+- **`apps/api/`**:
+  - Two new tables (`vouchers`, `redeem_challenges`) plus `wallet_address` + `wallet_chain` columns on `accounts`. Schema version bumped to `2`.
+  - Two new endpoints to replace `POST /v1/account/create`:
+    - `POST /v1/account/redeem-challenge` → returns a SIWE message bound to the supplied voucher + wallet address, with a 5-minute one-shot nonce.
+    - `POST /v1/account/redeem` → verifies the SIWE signature (siwe@2 + viem), atomically consumes the voucher + challenge, mints the account + API key.
+  - Two new endpoints for key recovery via wallet signature:
+    - `POST /v1/account/key/rotate-challenge`
+    - `POST /v1/account/key/rotate` (revokes all previous keys, issues a fresh `sk_live_…`)
+  - Domain pinning: messages MUST target `api.coronium.ai` on chain ID `8453` (Base mainnet) or verification rejects.
+  - 17 new e2e tests covering happy path + voucher-already-consumed + wrong-wallet signature + wallet-already-registered + key-rotation lifecycle.
+
+- **`packages/cli/`** (new):
+  - Wallet generation via `viem`'s BIP39/EVM derivation (default path `m/44'/60'/0'/0/0`).
+  - Wallet storage at `~/.coronium/wallet.json` (mode 0600) + optional `~/.coronium/seed.txt` (mode 0400).
+  - `coronium init` flow rewritten: prompts for voucher, prompts for wallet (generate / mnemonic / privkey / existing), signs SIWE, redeems.
+  - `coronium init --restore` recovers an existing account from a wallet (signs a rotate challenge).
+  - New `coronium key:rotate` command — wallet signs, server issues a new API key, all previous ones revoked.
+
+- **`scripts/mint-vouchers.mjs`** (new):
+  - Operator tool for batch issuance. Supports `--count`, `--batch`, `--campaign`, `--affiliate`, `--credit`, `--daily-cap`, `--session-cap`, `--expires`, `--db`, `--dry-run`. Prints codes to stdout, summary to stderr.
+
 ### Added — production API server
 
 - `apps/api/` — `coronium-api`, the production server implementing `openapi.yaml`.

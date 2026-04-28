@@ -3,6 +3,7 @@ import { Command } from "commander";
 import kleur from "kleur";
 import { CoroniumError } from "coronium-sdk";
 import { initCommand } from "./commands/init.js";
+import { keyRotateCommand } from "./commands/key.js";
 import { balanceCommand } from "./commands/balance.js";
 import { depositCommand } from "./commands/deposit.js";
 import { tariffsCommand } from "./commands/tariffs.js";
@@ -24,10 +25,17 @@ program
 
 program
   .command("init")
-  .description("Create an account and store the API key in ~/.coronium/config.toml")
-  .option("--email <email>", "optional email, for receipts only")
-  .option("--api-key <key>", "skip account creation; just store an existing key")
+  .description("Create or restore a Coronium account (wallet-bound, voucher-gated)")
+  .option("--voucher <code>", "voucher code (cor_v1_…); pass non-interactively")
+  .option("--restore", "skip voucher path; restore an existing account from your wallet")
+  .option("--email <email>", "optional email tag (no verification)")
+  .option("--api-key <key>", "bypass: just store an existing API key")
   .action((opts, cmd) => initCommand({ ...opts, ...cmd.optsWithGlobals() }));
+
+program
+  .command("key:rotate")
+  .description("Rotate your API key by signing a SIWE challenge with your wallet (revokes previous keys)")
+  .action((_opts, cmd) => keyRotateCommand(cmd.optsWithGlobals()));
 
 program
   .command("balance")

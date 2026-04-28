@@ -20,13 +20,20 @@ describe("coronium-cli", () => {
     expect(r.stdout.trim()).toMatch(/^\d+\.\d+\.\d+/);
   });
 
-  it("--help lists the seven verbs", async () => {
+  it("--help lists every command including key:rotate", async () => {
     const r = await run(["--help"]);
     expect(r.stdout).toContain("init");
+    expect(r.stdout).toContain("key:rotate");
     expect(r.stdout).toContain("balance");
     expect(r.stdout).toContain("deposit");
     expect(r.stdout).toContain("tariffs");
     expect(r.stdout).toContain("proxy");
+  });
+
+  it("init --help shows voucher + restore options", async () => {
+    const r = await run(["init", "--help"]);
+    expect(r.stdout).toContain("--voucher");
+    expect(r.stdout).toContain("--restore");
   });
 
   it("proxy --help shows all subcommands", async () => {

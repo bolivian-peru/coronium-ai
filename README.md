@@ -17,7 +17,7 @@ The reference backend is [Coronium](https://coronium.ai), but everything in this
 ```bash
 # Human developer
 npm install -g coronium-cli
-coronium init
+coronium init --voucher cor_v1_K7F3...     # voucher-gated, wallet-bound
 coronium proxy get --country US --type 5g
 
 # AI agent (Claude Code / Claude Desktop / Cursor / Windsurf)
@@ -25,7 +25,9 @@ claude mcp add coronium npx -y coronium-mcp
 # Then set CORONIUM_API_KEY in the MCP env.
 ```
 
-That's the entire pitch.
+`coronium init` generates a fresh EVM wallet locally, signs an [EIP-4361 (SIWE)](https://eips.ethereum.org/EIPS/eip-4361) challenge bound to your voucher, and gets back an `sk_live_…` API key. Same mnemonic works in MetaMask, Phantom (EVM mode), Rabby. Need a voucher? Get one at <https://coronium.ai/free> or via a partner. Lost the API key but kept the wallet? `coronium key:rotate` issues a new one. Lost the wallet but kept the mnemonic? `coronium init --restore`. Lost everything? Account's gone — same deal as a real crypto wallet.
+
+See [`docs/AUTH_DESIGN.md`](./docs/AUTH_DESIGN.md) for the full design and threat model.
 
 ---
 
