@@ -4,6 +4,7 @@ import kleur from "kleur";
 import { CoroniumError } from "coronium-sdk";
 import { initCommand } from "./commands/init.js";
 import { keyRotateCommand } from "./commands/key.js";
+import { statusCommand } from "./commands/status.js";
 import { balanceCommand } from "./commands/balance.js";
 import { depositCommand } from "./commands/deposit.js";
 import { tariffsCommand } from "./commands/tariffs.js";
@@ -20,7 +21,17 @@ const program = new Command();
 program
   .name("coronium")
   .description("Mobile 4G/5G proxies — pay-per-hour USDC. https://coronium.ai")
-  .version("0.1.0-alpha.0")
+  .version("0.1.0-alpha.2")
+  .addHelpText(
+    "after",
+    [
+      "",
+      "Need a voucher? Get one free at https://coronium.ai/free.",
+      "Try without installing globally:  npx -y coronium-cli init --voucher cor_v1_…",
+      "AI agent host? Use the MCP server:  claude mcp add coronium npx -y coronium-mcp",
+      "",
+    ].join("\n"),
+  )
   .option("--json", "emit machine-readable JSON instead of pretty output");
 
 program
@@ -36,6 +47,11 @@ program
   .command("key:rotate")
   .description("Rotate your API key by signing a SIWE challenge with your wallet (revokes previous keys)")
   .action((_opts, cmd) => keyRotateCommand(cmd.optsWithGlobals()));
+
+program
+  .command("status")
+  .description("Diagnose: backend reachable? key valid? wallet present?")
+  .action((_opts, cmd) => statusCommand(cmd.optsWithGlobals()));
 
 program
   .command("balance")

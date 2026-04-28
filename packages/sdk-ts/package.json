@@ -1,6 +1,6 @@
 {
   "name": "coronium-sdk",
-  "version": "0.1.0-alpha.1",
+  "version": "0.1.0-alpha.2",
   "description": "Typed TypeScript client for the Coronium mobile-proxy API.",
   "license": "Apache-2.0",
   "keywords": [

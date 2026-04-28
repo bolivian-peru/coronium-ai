@@ -36,6 +36,23 @@ describe("coronium-cli", () => {
     expect(r.stdout).toContain("--restore");
   });
 
+  it("--help mentions coronium.ai/free for vouchers", async () => {
+    const r = await run(["--help"]);
+    expect(r.stdout).toContain("coronium.ai/free");
+    expect(r.stdout).toContain("npx -y coronium-cli");
+  });
+
+  it("status --json returns expected shape", async () => {
+    const r = await run(["status", "--json"]);
+    const j = JSON.parse(r.stdout);
+    expect(j).toHaveProperty("config");
+    expect(j).toHaveProperty("backend");
+    expect(j).toHaveProperty("auth");
+    expect(j.config).toHaveProperty("base_url");
+    expect(j.config).toHaveProperty("api_key");
+    expect(j.backend).toHaveProperty("health");
+  });
+
   it("proxy --help shows all subcommands", async () => {
     const r = await run(["proxy", "--help"]);
     expect(r.stdout).toContain("get");
