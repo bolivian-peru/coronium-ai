@@ -6,27 +6,13 @@
 [![npm coronium-sdk](https://img.shields.io/npm/v/coronium-sdk.svg?label=coronium-sdk)](https://www.npmjs.com/package/coronium-sdk)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
-Agent-native interfaces to [Coronium](https://coronium.ai) — a CLI for humans, an MCP server for AI hosts, a typed SDK for everyone else, and a local mock API to test against. Three published packages, one OpenAPI spec, seven verbs.
+**Open-source agent-native interfaces for mobile (4G/5G) proxy infrastructure.** A CLI for humans, an MCP server for AI hosts, a typed SDK for code, a production API server, and a local mock for testing. One OpenAPI spec, seven verbs, three published packages.
 
-```
-coronium-ai/
-├── openapi.yaml                 ← source of truth, hand-authored, frozen on v0.1.0
-├── llms.txt                     ← agent self-discovery (will be served at coronium.ai/llms.txt)
-├── AGENTS.md                    ← agent host instructions (will be served at coronium.ai/AGENTS.md)
-├── packages/
-│   ├── sdk-ts/                  ← coronium-sdk — typed TypeScript client
-│   ├── cli/                     ← coronium-cli   — `coronium proxy get …`
-│   └── mcp/                     ← coronium-mcp   — MCP server (Claude / Cursor / Windsurf)
-├── apps/
-│   └── api/                     ← coronium-mock-api — local Express mock for testing
-├── scripts/
-│   └── doctor.mjs               ← pre-publish sanity check
-└── .github/workflows/ci.yml     ← typecheck + build + test + doctor + dry-run publish
-```
+The reference backend is [Coronium](https://coronium.ai), but everything in this repo is provider-neutral: the OpenAPI contract is the integration boundary, and the API server in `apps/api/` is open-source. Anyone can host their own backend, embed the CLI in a customer dashboard, or join the affiliate program (see [Resellers & Integrators](#resellers--integrators) below).
 
 ---
 
-## Two install commands — that's the entire pitch
+## Two install commands
 
 ```bash
 # Human developer
@@ -36,55 +22,30 @@ coronium proxy get --country US --type 5g
 
 # AI agent (Claude Code / Claude Desktop / Cursor / Windsurf)
 claude mcp add coronium npx -y coronium-mcp
-# (set CORONIUM_API_KEY in the MCP env)
+# Then set CORONIUM_API_KEY in the MCP env.
 ```
+
+That's the entire pitch.
 
 ---
 
-## Local development — full end-to-end test in one terminal
+## Repository layout
 
-The mock API at `apps/mock-api/` implements every verb in `openapi.yaml`. You can run the entire stack on your laptop with no production dependencies. The real API at `apps/api/` is what gets deployed to `api.coronium.ai`.
-
-```bash
-# One-time setup
-pnpm install
-pnpm build
-
-# Terminal A — boot the mock API
-pnpm dev:api
-# → listening on http://127.0.0.1:5050
-
-# Terminal B — point the CLI at the mock and run the hero path
-export CORONIUM_BASE_URL=http://127.0.0.1:5050/v1
-node packages/cli/dist/index.js init                            # mints a fake key
-node packages/cli/dist/index.js balance
-node packages/cli/dist/index.js tariffs --country US
-node packages/cli/dist/index.js proxy get --country US --type 5g
-node packages/cli/dist/index.js proxy list
-node packages/cli/dist/index.js proxy rotate <id>
-node packages/cli/dist/index.js proxy release <id>
-
-# Or link it globally for convenience
-cd packages/cli && npm link
-coronium balance                                                # global `coronium` now works
 ```
-
-Mock state is in-memory and resets on every restart — no persistence, no real charges, no real proxies.
-
-To test against a real backend later: change `CORONIUM_BASE_URL` to point at the production URL.
-
----
-
-## Tests
-
-```bash
-pnpm test          # one-shot — runs all 21 vitest cases
-pnpm test:watch    # interactive
-pnpm typecheck     # tsc --noEmit on every package
-pnpm doctor        # pre-publish sanity (secrets / prod IPs / leftover .tgz / dist hygiene)
+coronium-ai/
+├── openapi.yaml               ← the contract — frozen on v0.1.0
+├── llms.txt                   ← agent self-discovery (Mintlify/Cursor convention)
+├── AGENTS.md                  ← agent host instructions
+├── packages/
+│   ├── sdk-ts/                ← coronium-sdk    — typed TypeScript client (npm)
+│   ├── cli/                   ← coronium-cli    — `coronium proxy get …` (npm)
+│   └── mcp/                   ← coronium-mcp    — MCP server for Claude / Cursor / Windsurf (npm)
+├── apps/
+│   ├── api/                   ← coronium-api    — production API server (Fastify + SQLite)
+│   └── mock-api/              ← local mock; never published
+├── scripts/doctor.mjs         ← pre-publish sanity check
+└── .github/workflows/ci.yml   ← typecheck + build + test + doctor + dry-run publish
 ```
-
-The SDK suite (`packages/sdk-ts/test/`) boots the mock app on a random port and exercises every verb end-to-end. The CLI suite shells out to `dist/index.js` and checks `--help` / `--version` output. The MCP suite parses the built bundle to verify all 8 tools are registered.
 
 ---
 
@@ -101,44 +62,123 @@ The SDK suite (`packages/sdk-ts/test/`) boots the mock app on a random port and 
 | replace | `coronium proxy replace <id>` | `POST /v1/proxies/{id}/replace` | `proxy_replace` |
 | release | `coronium proxy release <id>` | `DELETE /v1/proxies/{id}` | `proxy_release` |
 
-Same surface in all three. If a verb stops being needed, it's deprecated in all three at once. If a verb is added, same.
+Same surface in all three. If a verb stops being needed it's deprecated in all three at once. If a verb is added, same.
 
 ---
 
-## Publishing checklist
+## Local development — full end-to-end test in one terminal
 
-Before you `pnpm publish:alpha`:
+```bash
+# One-time
+pnpm install
+pnpm build
 
-1. **Log in** — `npm login` (uses 2FA if your account has it on).
-2. **Bump the version** if you've changed anything since the last publish — edit each `packages/*/package.json` `version` field. Pre-1.0 we publish under the `alpha` tag.
-3. **Run the doctor** — `pnpm doctor` (also runs as part of `publish:dry`).
-4. **Dry-run** — `pnpm publish:dry` (verifies tarballs, file lists, no leftover debris).
-5. **Real publish** — `pnpm publish:alpha`.
+# Terminal A — boot the local mock at http://127.0.0.1:5050
+pnpm dev:api
 
-The doctor catches: missing `dist/`, leftover `.tgz`, secret-shaped strings, production IPs/hostnames, missing LICENSE, wrong `publishConfig.access`. CI runs it on every push.
+# Terminal B — point the CLI at the mock
+export CORONIUM_BASE_URL=http://127.0.0.1:5050/v1
+node packages/cli/dist/index.js init
+node packages/cli/dist/index.js proxy get --country US --type 5g
+node packages/cli/dist/index.js proxy rotate <id>
+node packages/cli/dist/index.js proxy release <id>
 
-When you're ready for `latest` instead of `alpha`, change `publish:alpha` to `pnpm -r ... publish --access public` (no `--tag`).
+# Or link globally
+cd packages/cli && npm link
+coronium balance
+```
+
+Mock state is in-memory and resets on every restart — no persistence, no real charges, no real proxies.
+
+To test against a real backend, set `CORONIUM_BASE_URL` to that backend's URL. The reference public backend lives at `https://api.coronium.ai/v1`.
 
 ---
 
-## Embedding in coronium.ai
+## Tests
 
-To embed the same agent surface in your `coronium.ai` site:
+```bash
+pnpm test          # 32 vitest cases across SDK, CLI, MCP, mock, and the production API
+pnpm test:watch    # interactive
+pnpm typecheck     # tsc on every package (fails-fast on missing deps)
+pnpm doctor        # pre-publish: secrets / prod IPs / leftover .tgz / dist hygiene
+```
 
-1. **Install commands** — show `npm install -g coronium-cli` and `claude mcp add coronium npx -y coronium-mcp` prominently above the fold.
-2. **Live demo** — the existing CLI chat agent (currently at `dashboard.coronium.io/cli`) is the demo. Move that route to `coronium.ai/cli` or embed the same React component.
-3. **Static drops** — copy `llms.txt` and `AGENTS.md` to your site root so they're reachable at `coronium.ai/llms.txt` and `coronium.ai/AGENTS.md`.
-4. **OpenAPI** — host `openapi.yaml` at `api.coronium.ai/openapi.yaml`. Tools like Swagger UI / Redoc render it with one line.
+The SDK suite boots `apps/mock-api/` on a random port. The production API suite boots `apps/api/` against an in-process mock of the upstream backend. The CLI suite shells out to `dist/index.js` and checks `--help` / `--version`. The MCP suite parses the built bundle to verify all 8 tools register.
+
+---
+
+## Self-host the API server
+
+`apps/api/` is a complete production API server — Fastify 5, SQLite (WAL), pino, undici, helmet, rate-limit. It implements `openapi.yaml` and forwards to your own backend over HTTPS. Three deploy paths in [`apps/api/README.md`](./apps/api/README.md):
+
+- **Docker** — multi-stage build, non-root, healthcheck. `docker run -p 5050:5050 …`
+- **PM2** — `pm2 start apps/api/ecosystem.config.cjs`
+- **systemd** — hardened unit file (`NoNewPrivileges`, `ProtectSystem=strict`, …)
+
+All three sit behind nginx (TLS via certbot). Configuration is via env vars — see `apps/api/.env.example`.
+
+If you're running your own mobile-proxy fleet and want the CLI/MCP/SDK ecosystem on top of it: set `UPSTREAM_API_URL` to your existing API and `UPSTREAM_API_TOKEN` to a service token, and you're shipping. The 9 upstream methods you need to implement are documented in [`apps/api/src/upstream/client.ts`](./apps/api/src/upstream/client.ts).
+
+---
+
+## Resellers & integrators
+
+You can build on top of this repo three ways. Pick the one that matches how much customer ownership you want.
+
+### 1. Recommend the official backend (zero integration)
+
+Your tutorial, doc page, blog post, or product simply tells users to:
+
+```bash
+npm install -g coronium-cli
+coronium init
+```
+
+`coronium init` defaults to `https://api.coronium.ai/v1`, where the user gets a fresh account with $0.50 trial credit and a USDC deposit address. No work for you. No revenue share — but no responsibility either.
+
+### 2. Embed the CLI in your dashboard (affiliate program)
+
+You point users at the official backend **with attribution** so you get a revenue share on everything they spend:
+
+- **Server-side path** — your backend mints a signed referral token and includes it on `POST /v1/account/create`. Coronium attributes the user to you forever. You bill nothing; Coronium pays you a % of net revenue monthly in USDC.
+- **Wrapper-package path** — publish `@yourbrand/proxies` as a tiny wrapper around `coronium-cli` that injects your affiliate ID. Users `npm install -g @yourbrand/proxies`, run `yourbrand proxy get …`, and attribution is baked in.
+
+The affiliate program is launching alongside this repo. Default rev share is **20% of net revenue, lifetime**, paid in USDC, $50 minimum payout, 60-day clawback on refunds. Sign up at <https://coronium.ai/partners> (live soon — until then, contact partners@coronium.io).
+
+This is the right path if you have a customer base already (a SaaS, a community, a content channel) and want to add mobile-proxy capability without building the infra.
+
+### 3. Run your own backend (full sovereignty)
+
+Self-host `apps/api/` against your own modem fleet (or another wholesale provider that exposes the 9 methods in `client.ts`). You own auth, billing, customer data, branding. You publish your own `@yourbrand/cli` and `@yourbrand/mcp` (or just rebrand and republish this repo's packages — Apache-2.0 license).
+
+This is the right path if you have a fleet to monetize, want full margin, and can absorb the operational complexity.
+
+A wholesale partnership with Coronium is also available — you embed against `api.coronium.ai/v1` with a tenant token and resell at your own markup. Contact partners@coronium.io.
+
+---
+
+## Publishing the npm packages (for forks / your own brand)
+
+```bash
+npm login                                # log in as your scope owner
+pnpm doctor                              # local sanity
+pnpm publish:dry                         # verify tarballs
+pnpm publish:alpha                       # publish on the alpha tag
+```
+
+If you're forking under your own scope, do a search-and-replace from `coronium-cli/mcp/sdk` to `@yourscope/cli/mcp/sdk` first. License is Apache-2.0 — go for it.
 
 ---
 
 ## License
 
-Apache-2.0. See `LICENSE` in each package directory.
+[Apache-2.0](./LICENSE). See `LICENSE` in each package directory.
 
-## Reference
+## Links
 
-- Marketing: <https://coronium.ai>
-- Customer dashboard: <https://dashboard.coronium.io>
-- API spec (live): <https://api.coronium.ai/openapi.yaml>
-- Agent discovery: <https://coronium.ai/llms.txt>, <https://coronium.ai/AGENTS.md>
+- **Reference backend** — <https://api.coronium.ai/v1> (OpenAPI: <https://api.coronium.ai/openapi.yaml>)
+- **Marketing** — <https://coronium.ai>
+- **Customer dashboard** — <https://dashboard.coronium.io>
+- **Agent discovery** — <https://coronium.ai/llms.txt>, <https://coronium.ai/AGENTS.md>
+- **Affiliate / reseller** — partners@coronium.io
+- **Bug reports / feature requests** — [GitHub issues](https://github.com/bolivian-peru/coronium-ai/issues)
