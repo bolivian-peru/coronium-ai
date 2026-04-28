@@ -43,7 +43,7 @@ claude mcp add coronium npx -y coronium-mcp
 
 ## Local development — full end-to-end test in one terminal
 
-The mock API at `apps/api/` implements every verb in `openapi.yaml`. You can run the entire stack on your laptop with no production dependencies.
+The mock API at `apps/mock-api/` implements every verb in `openapi.yaml`. You can run the entire stack on your laptop with no production dependencies. The real API at `apps/api/` is what gets deployed to `api.coronium.ai`.
 
 ```bash
 # One-time setup

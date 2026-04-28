@@ -4,6 +4,23 @@ All notable changes to the `coronium-ai` packages.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Pre-1.0 we publish under the `alpha` npm tag and may break minor versions.
 
+## [unreleased]
+
+### Added — production API server
+
+- `apps/api/` — `coronium-api`, the production server implementing `openapi.yaml`.
+  - **Stack**: Fastify 5 + Zod + better-sqlite3 + pino + undici. Type-safe end to end.
+  - **Auth**: bearer `sk_live_…` keys, scrypt-hashed at rest, 12-char prefix index for fast lookup, constant-time verification.
+  - **State**: SQLite with WAL — accounts, api_keys, spend_ledger, audit_log. Schema in `src/db/schema.sql`, idempotently applied on boot.
+  - **Spend caps**: per-call (X-Cost-Cap-Cents header), per-session (account default), per-day (account), per-day (tenant ceiling). All enforced before the upstream call.
+  - **Upstream integration**: HTTP client to cor-api-v1's existing agent endpoint via `UPSTREAM_API_TOKEN`. Timeouts, error mapping (STOCK_OUT / CARRIER_NO_OP passed through with stable `code` field).
+  - **Hardening**: helmet, CORS allowlist, rate-limit per-key (120/min) + per-IP (60/min), trustProxy, body limit 64 kB, audit log of every request.
+  - **Health**: `GET /health` (liveness) + `GET /ready` (db + upstream) for nginx / k8s / systemd.
+  - **Graceful shutdown**: SIGINT / SIGTERM closes Fastify and the DB; uncaughtException / unhandledRejection are fatal.
+  - **Tests**: 11 e2e tests against an in-process mock of cor-api-v1. Full hero path covered (auth → tariffs → buy → rotate → release).
+  - **Deploy**: multi-stage Dockerfile, PM2 ecosystem.config.cjs, hardened systemd unit, nginx config example, three deploy paths in `apps/api/README.md`.
+- `apps/mock-api/` — renamed from `apps/api/`. Local-dev mock; never published.
+
 ## [0.1.0-alpha.0] — 2026-04-28
 
 Initial scaffold. Three packages, one OpenAPI contract, seven verbs.

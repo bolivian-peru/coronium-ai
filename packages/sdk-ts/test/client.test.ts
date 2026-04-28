@@ -1,7 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { Server } from "node:http";
 import { Coronium, CoroniumError, CoroniumStockOutError } from "../src/index.js";
-import { app } from "../../../apps/api/src/index.js";
+import { app } from "../../../apps/mock-api/src/index.js";
 
 let server: Server;
 let baseUrl: string;

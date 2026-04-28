@@ -1,0 +1,39 @@
+[Unit]
+Description=Coronium agent-native API
+Documentation=https://github.com/bolivian-peru/coronium-ai
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=coronium
+Group=coronium
+WorkingDirectory=/opt/coronium-api
+EnvironmentFile=/opt/coronium-api/.env
+ExecStart=/usr/bin/node /opt/coronium-api/dist/server.js
+Restart=on-failure
+RestartSec=5s
+KillSignal=SIGTERM
+TimeoutStopSec=15s
+StandardOutput=journal
+StandardError=journal
+
+# Hardening
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+ReadWritePaths=/opt/coronium-api/data
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+RestrictNamespaces=yes
+LockPersonality=yes
+MemoryDenyWriteExecute=yes
+RestrictRealtime=yes
+SystemCallArchitectures=native
+
+[Install]
+WantedBy=multi-user.target

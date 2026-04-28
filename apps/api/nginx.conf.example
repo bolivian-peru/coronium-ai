@@ -1,0 +1,52 @@
+# Nginx server block for api.coronium.ai.
+# Drop into /etc/nginx/sites-available/api.coronium.ai and enable with
+# `ln -s ../sites-available/api.coronium.ai /etc/nginx/sites-enabled/`.
+# TLS via certbot --nginx -d api.coronium.ai.
+
+server {
+    listen 80;
+    listen [::]:80;
+    server_name api.coronium.ai;
+
+    # Cert renewal
+    location /.well-known/acme-challenge/ { root /var/www/certbot; }
+
+    # Force HTTPS for everything else
+    location / { return 301 https://$host$request_uri; }
+}
+
+server {
+    listen 443 ssl http2;
+    listen [::]:443 ssl http2;
+    server_name api.coronium.ai;
+
+    ssl_certificate     /etc/letsencrypt/live/api.coronium.ai/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/api.coronium.ai/privkey.pem;
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_prefer_server_ciphers on;
+
+    # Security headers
+    add_header Strict-Transport-Security "max-age=63072000; includeSubDomains" always;
+    add_header X-Content-Type-Options nosniff always;
+    add_header Referrer-Policy no-referrer always;
+
+    # OpenAPI spec — static, served directly
+    location = /openapi.yaml {
+        alias /opt/coronium-ai/openapi.yaml;
+        add_header Content-Type "application/yaml" always;
+        add_header Access-Control-Allow-Origin "*" always;
+    }
+
+    # Everything else proxies to the Node app
+    location / {
+        proxy_pass http://127.0.0.1:5050;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Request-Id $request_id;
+        proxy_read_timeout 60s;
+        proxy_send_timeout 60s;
+    }
+}
