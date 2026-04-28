@@ -1,0 +1,61 @@
+{
+  "name": "@coronium/mcp",
+  "version": "0.1.0-alpha.0",
+  "description": "Coronium MCP server — buy and manage mobile (4G/5G) proxies from Claude, Cursor, Windsurf, or any MCP host.",
+  "license": "Apache-2.0",
+  "keywords": [
+    "coronium",
+    "proxy",
+    "mobile-proxy",
+    "4g",
+    "5g",
+    "mcp",
+    "model-context-protocol",
+    "claude",
+    "cursor",
+    "ai-agent"
+  ],
+  "homepage": "https://github.com/bolivian-peru/coronium-ai/tree/main/packages/mcp",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/bolivian-peru/coronium-ai.git",
+    "directory": "packages/mcp"
+  },
+  "bugs": {
+    "url": "https://github.com/bolivian-peru/coronium-ai/issues"
+  },
+  "type": "module",
+  "bin": {
+    "coronium-mcp": "./dist/index.js"
+  },
+  "main": "./dist/index.js",
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json && chmod +x dist/index.js",
+    "dev": "tsc -p tsconfig.json --watch",
+    "clean": "rm -rf dist",
+    "start": "node dist/index.js",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "prepublishOnly": "pnpm clean && pnpm build"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": false
+  },
+  "dependencies": {
+    "@coronium/sdk-ts": "workspace:*",
+    "@modelcontextprotocol/sdk": "1.0.4",
+    "zod": "3.23.8"
+  },
+  "devDependencies": {
+    "@types/node": "20.14.10",
+    "typescript": "5.7.2"
+  }
+}
