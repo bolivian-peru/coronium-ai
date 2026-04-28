@@ -1,0 +1,247 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Coronium — sign up demo</title>
+  <style>
+    :root {
+      --fg: #0a0e16; --bg: #ffffff; --muted: #5a6378;
+      --border: #d8dde6; --accent: #ff6b35; --good: #1f8a3a; --bad: #c0392b;
+      --code-bg: #f4f6fa;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root { --fg: #e6ebf2; --bg: #0d1218; --muted: #9aa3b3; --border: #1e2533; --code-bg: #131922; }
+    }
+    * { box-sizing: border-box; }
+    body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--fg); margin: 0; line-height: 1.5; }
+    main { max-width: 580px; margin: 4rem auto; padding: 0 1.25rem; }
+    h1 { font-size: 1.75rem; margin: 0 0 0.5rem; }
+    h2 { font-size: 1.25rem; margin: 1.5rem 0 0.5rem; }
+    h3 { font-size: 1rem; margin: 1.25rem 0 0.5rem; }
+    p { margin: 0.5rem 0; color: var(--muted); }
+    p strong { color: var(--fg); }
+    a { color: var(--accent); }
+    input, button {
+      font: inherit; font-size: 0.95rem; padding: 0.6rem 0.75rem;
+      border: 1px solid var(--border); border-radius: 6px; background: var(--bg); color: var(--fg);
+    }
+    input { width: 100%; font-family: ui-monospace, "SF Mono", Monaco, Consolas, monospace; margin: 0.5rem 0 1rem; }
+    button { cursor: pointer; background: var(--fg); color: var(--bg); border-color: var(--fg); font-weight: 500; }
+    button:hover { opacity: 0.85; }
+    button:disabled { opacity: 0.4; cursor: not-allowed; }
+    button.secondary { background: var(--bg); color: var(--fg); }
+    .step { display: none; }
+    .step.active { display: block; }
+    code, pre { font-family: ui-monospace, "SF Mono", Monaco, Consolas, monospace; background: var(--code-bg); border-radius: 4px; }
+    code { padding: 0.1em 0.4em; font-size: 0.9em; }
+    pre { padding: 0.85rem; font-size: 0.85rem; overflow-x: auto; word-break: break-all; white-space: pre-wrap; }
+    .alert { padding: 1rem; border: 1px solid var(--bad); color: var(--bad); border-radius: 6px; margin: 1rem 0; }
+    .ok { padding: 1rem; border: 1px solid var(--good); color: var(--good); border-radius: 6px; }
+    .ok h2 { margin-top: 0; color: var(--fg); }
+    .radio-list { display: grid; gap: 0.5rem; margin: 0.75rem 0 1rem; }
+    .radio-list label { display: flex; align-items: center; gap: 0.5rem; padding: 0.6rem 0.75rem; border: 1px solid var(--border); border-radius: 6px; cursor: pointer; color: var(--fg); }
+    .radio-list label:has(input:checked) { border-color: var(--accent); }
+    .row { display: flex; gap: 0.5rem; align-items: center; }
+    .mn { letter-spacing: 0.5px; line-height: 1.7; font-size: 0.9rem; }
+    .footer { margin-top: 3rem; padding-top: 1.25rem; border-top: 1px solid var(--border); color: var(--muted); font-size: 0.85rem; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Sign up to Coronium</h1>
+    <p>Mobile 4G/5G proxies, pay-per-hour USDC. Wallet-bound, no email verification.</p>
+
+    <section id="step-voucher" class="step active">
+      <form id="form-voucher">
+        <h2>1. Voucher</h2>
+        <p>Paste your voucher code below. <a href="https://coronium.ai/free" target="_blank" rel="noopener">Get a free one</a>.</p>
+        <input id="voucher" placeholder="cor_v1_…" autocomplete="off" autofocus required />
+
+        <h2>2. Wallet</h2>
+        <div class="radio-list">
+          <label>
+            <input type="radio" name="src" value="generate" checked />
+            <span><strong>Generate a new EVM wallet</strong> — recommended for new users. We show your 24-word mnemonic ONCE.</span>
+          </label>
+          <label>
+            <input type="radio" name="src" value="metamask" />
+            <span><strong>Use my existing wallet</strong> — MetaMask, Rainbow, Coinbase, Phantom (EVM mode), etc.</span>
+          </label>
+        </div>
+
+        <button type="submit">Sign up</button>
+      </form>
+    </section>
+
+    <section id="step-signing" class="step">
+      <h2>Signing…</h2>
+      <p>If you're using MetaMask, check the popup and approve the signature. (Signing is gas-free.)</p>
+    </section>
+
+    <section id="step-done" class="step"></section>
+    <section id="step-error" class="step"></section>
+
+    <p class="footer">
+      Open-source: <a href="https://github.com/bolivian-peru/coronium-ai" target="_blank" rel="noopener">github.com/bolivian-peru/coronium-ai</a> ·
+      Skill: <code>embed-signup</code> ·
+      API: <a href="https://api.coronium.ai/openapi.yaml" target="_blank" rel="noopener">openapi.yaml</a>
+    </p>
+  </main>
+
+  <script type="module">
+    import {
+      generateMnemonic,
+      english,
+      mnemonicToAccount,
+    } from "https://esm.sh/viem@2.21.55/accounts";
+    import { getAddress } from "https://esm.sh/viem@2.21.55";
+
+    const API = window.CORONIUM_API_BASE ?? "https://api.coronium.ai/v1";
+    const $ = (id) => document.getElementById(id);
+    const show = (name) => {
+      for (const s of document.querySelectorAll(".step")) s.classList.remove("active");
+      $(`step-${name}`).classList.add("active");
+    };
+
+    // Pre-fill voucher from ?ref=… for affiliate links.
+    const refParam = new URL(window.location.href).searchParams.get("ref");
+    if (refParam) $("voucher").value = refParam;
+
+    $("form-voucher").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const voucher = $("voucher").value.trim();
+      const source = document.querySelector('input[name="src"]:checked').value;
+      show("signing");
+      try {
+        const result = await signupFlow(voucher, source);
+        renderDone(result);
+      } catch (err) {
+        renderError(err);
+      }
+    });
+
+    async function signupFlow(voucher, source) {
+      let address, signMessage, mnemonic;
+      if (source === "generate") {
+        mnemonic = generateMnemonic(english);
+        const acc = mnemonicToAccount(mnemonic);
+        address = acc.address;
+        signMessage = (m) => acc.signMessage({ message: m });
+      } else {
+        if (!window.ethereum) throw apiError("NO_INJECTED_WALLET", "No EVM wallet detected. Install MetaMask, then try again, or pick 'Generate'.");
+        const accs = await window.ethereum.request({ method: "eth_requestAccounts" });
+        if (!accs[0]) throw apiError("NO_INJECTED_WALLET", "No accounts returned by the wallet.");
+        address = getAddress(accs[0]);
+        signMessage = (m) => window.ethereum.request({ method: "personal_sign", params: [m, address] });
+      }
+
+      const c = await fetchJson(`${API}/account/redeem-challenge`, "POST", {
+        voucher,
+        wallet_address: address,
+      });
+      const sig = await signMessage(c.siwe_message);
+      const r = await fetchJson(`${API}/account/redeem`, "POST", {
+        siwe_message: c.siwe_message,
+        signature: sig,
+      });
+      return { ...r, mnemonic };
+    }
+
+    async function fetchJson(url, method, body) {
+      const res = await fetch(url, {
+        method,
+        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        body: JSON.stringify(body),
+      });
+      const text = await res.text();
+      let parsed;
+      try { parsed = text ? JSON.parse(text) : undefined; } catch { parsed = text; }
+      if (!res.ok) throw apiError(parsed?.code ?? `HTTP_${res.status}`, parsed?.message ?? res.statusText);
+      return parsed;
+    }
+    function apiError(code, message) {
+      const e = new Error(message);
+      e.code = code;
+      return e;
+    }
+
+    function renderDone(r) {
+      const html = `
+        <div class="ok">
+          <h2>You're in.</h2>
+          <p>Account: <code>${escapeHtml(r.account_id)}</code></p>
+          <p>Wallet: <code>${escapeHtml(r.wallet_address)}</code> <span style="color: var(--muted)">(EVM, Base/Arbitrum/Optimism)</span></p>
+
+          <h3>API key — shown once</h3>
+          <p>Save this. Without it you'll need to use 'rotate' (which requires your wallet) to get a new one.</p>
+          <pre id="apikey">${escapeHtml(r.api_key)}</pre>
+          <button id="copy-key" class="secondary">Copy API key</button>
+
+          ${r.mnemonic ? `
+          <h3>Recovery phrase — shown once</h3>
+          <p>These 24 words ARE your account. Coronium cannot recover them. Anyone with them can drain your balance.</p>
+          <pre class="mn">${escapeHtml(r.mnemonic)}</pre>
+          <button id="dl-wallet" class="secondary">Download wallet.json</button>
+          ` : ""}
+
+          <h3>Balance + caps</h3>
+          <p>
+            Trial credit: <strong>$${r.balance_usd.toFixed(2)}</strong> ·
+            Daily cap: <strong>$${r.daily_spend_cap_usd.toFixed(2)}</strong>
+          </p>
+          <p>To top up, send USDC on Base / Arbitrum / Optimism / Ethereum to <code>${escapeHtml(r.deposit_addresses.evm_native)}</code> — that's your own wallet.</p>
+
+          <h3>Next</h3>
+          <pre>$ npm install -g coronium-cli
+$ coronium init --api-key ${escapeHtml(r.api_key.slice(0, 16))}…
+$ coronium proxy get --country US --type 5g</pre>
+        </div>`;
+      $("step-done").innerHTML = html;
+      show("done");
+
+      $("copy-key").addEventListener("click", async () => {
+        await navigator.clipboard.writeText(r.api_key);
+        $("copy-key").textContent = "Copied";
+      });
+      const dl = $("dl-wallet");
+      if (dl && r.mnemonic) {
+        dl.addEventListener("click", () => {
+          const blob = new Blob(
+            [JSON.stringify({
+              address: r.wallet_address,
+              mnemonic: r.mnemonic,
+              derivation_path: "m/44'/60'/0'/0/0",
+              created_at: new Date().toISOString(),
+              app: "coronium-signup-web",
+              version: 1,
+            }, null, 2)],
+            { type: "application/json" },
+          );
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = "coronium-wallet.json";
+          a.click();
+          URL.revokeObjectURL(url);
+        });
+      }
+    }
+
+    function renderError(err) {
+      $("step-error").innerHTML = `
+        <div class="alert">
+          <h3 style="color: var(--bad)">Couldn't sign you up</h3>
+          <p><strong>${escapeHtml(err.code ?? "UNKNOWN")}</strong></p>
+          <p>${escapeHtml(err.message ?? String(err))}</p>
+          <button onclick="location.reload()">Try again</button>
+        </div>`;
+      show("error");
+    }
+
+    function escapeHtml(s) {
+      return String(s).replace(/[&<>"']/g, (c) => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]));
+    }
+  </script>
+</body>
+</html>

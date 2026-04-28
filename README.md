@@ -138,6 +138,18 @@ coronium init
 
 `coronium init` defaults to `https://api.coronium.ai/v1`, where the user gets a fresh account with $0.50 trial credit and a USDC deposit address. No work for you. No revenue share — but no responsibility either.
 
+### 1.5. Embed the signup form in your own site (browser-native, no CLI install)
+
+The CLI is Node-only, but the *signup flow* is just three HTTPS calls + an EIP-191 signature. It runs entirely in the browser via `viem`. Drop a single HTML file into your site, or use the React component, and your users sign up directly on your domain:
+
+```html
+<!-- Open skills/embed-signup/assets/demo.html in any modern browser. Works as-is. -->
+```
+
+Or for React / Next.js / Vite, copy the component from [`skills/embed-signup/references/react.md`](./skills/embed-signup/references/react.md). The full skill (with security guidance, troubleshooting, vanilla-JS variant, and exact wire format) lives at [`skills/embed-signup/SKILL.md`](./skills/embed-signup/SKILL.md). It's a Claude-format skill, so you can also drop it into a Claude Code workspace and have an agent generate the integration for you.
+
+Use this if you want users to sign up on YOUR site (no CLI install) but still get a real Coronium account. Pairs naturally with #2 below — distribute affiliate-attributed vouchers, embed the signup form, get rev share automatically.
+
 ### 2. Embed the CLI in your dashboard (affiliate program)
 
 You point users at the official backend **with attribution** so you get a revenue share on everything they spend:
