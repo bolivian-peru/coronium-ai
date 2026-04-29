@@ -3,7 +3,7 @@
 // mnemonic. Keypair format matches MetaMask / standard EVM conventions —
 // users can import the same mnemonic into Phantom/MetaMask if they want.
 
-import { mkdir, readFile, writeFile, chmod } from "node:fs/promises";
+import { mkdir, readFile, writeFile, chmod, unlink, stat } from "node:fs/promises";
 import { homedir } from "node:os";
 import { dirname, join } from "node:path";
 import {
@@ -14,6 +14,14 @@ import {
   mnemonicToAccount,
   privateKeyToAccount,
 } from "viem/accounts";
+import {
+  decryptJson,
+  encryptJson,
+  isEncryptedFile,
+  type EncryptedFile,
+  WrongPassphraseError,
+} from "./wallet-crypt.js";
+import prompts from "prompts";
 
 const WALLET_DIR = join(homedir(), ".coronium");
 const WALLET_PATH = join(WALLET_DIR, "wallet.json");
@@ -31,20 +39,99 @@ export interface StoredWallet {
 
 export type WalletAccount = HDAccount | PrivateKeyAccount;
 
-export async function loadWallet(): Promise<StoredWallet | undefined> {
+export interface LoadOptions {
+  /** Optional passphrase for an encrypted wallet. If omitted and the wallet
+   *  is encrypted, we read CORONIUM_WALLET_PASSPHRASE env, then prompt
+   *  interactively (in TTY) or fail (in --no-prompt). */
+  passphrase?: string;
+  /** True to skip interactive prompt and fail with a clear error if the
+   *  passphrase isn't available via opts/env. */
+  noPrompt?: boolean;
+}
+
+export async function isWalletEncrypted(): Promise<boolean> {
   try {
     const text = await readFile(WALLET_PATH, "utf8");
-    return JSON.parse(text) as StoredWallet;
+    const parsed = JSON.parse(text);
+    return isEncryptedFile(parsed);
+  } catch (e: any) {
+    if (e?.code === "ENOENT") return false;
+    throw e;
+  }
+}
+
+export async function loadWallet(opts: LoadOptions = {}): Promise<StoredWallet | undefined> {
+  let text: string;
+  try {
+    text = await readFile(WALLET_PATH, "utf8");
   } catch (e: any) {
     if (e?.code === "ENOENT") return undefined;
     throw e;
   }
+  const parsed = JSON.parse(text);
+
+  if (!isEncryptedFile(parsed)) {
+    return parsed as StoredWallet;
+  }
+
+  // Encrypted — need a passphrase.
+  let passphrase = opts.passphrase ?? process.env.CORONIUM_WALLET_PASSPHRASE;
+  if (!passphrase) {
+    if (opts.noPrompt) {
+      throw new Error(
+        "Wallet is encrypted but no passphrase available. Set CORONIUM_WALLET_PASSPHRASE or pass passphrase explicitly.",
+      );
+    }
+    const { p } = await prompts({
+      type: "password",
+      name: "p",
+      message: "Wallet passphrase:",
+    });
+    passphrase = String(p ?? "");
+  }
+  if (!passphrase) {
+    throw new Error("Passphrase required to unlock wallet.");
+  }
+  return decryptJson<StoredWallet>(parsed as EncryptedFile, passphrase);
 }
 
 export async function saveWallet(w: StoredWallet): Promise<void> {
   await mkdir(WALLET_DIR, { recursive: true, mode: 0o700 });
   await writeFile(WALLET_PATH, JSON.stringify(w, null, 2), { mode: 0o600 });
   await chmod(WALLET_PATH, 0o600);
+}
+
+/** Encrypt-in-place: read the plaintext wallet, write the encrypted form,
+ *  delete seed.txt (mnemonic now lives only in the encrypted blob). */
+export async function encryptWalletAtRest(passphrase: string): Promise<void> {
+  const text = await readFile(WALLET_PATH, "utf8");
+  const parsed = JSON.parse(text);
+  if (isEncryptedFile(parsed)) {
+    throw new Error("Wallet is already encrypted. Use wallet:decrypt first if you want to re-encrypt.");
+  }
+  const encrypted = encryptJson(parsed, passphrase);
+  await writeFile(WALLET_PATH, JSON.stringify(encrypted, null, 2), { mode: 0o600 });
+  await chmod(WALLET_PATH, 0o600);
+  // Clean up seed.txt — the mnemonic is now in the encrypted wallet.json.
+  try {
+    await unlink(SEED_PATH);
+  } catch (e: any) {
+    if (e?.code !== "ENOENT") throw e;
+  }
+}
+
+/** Decrypt-in-place: convert encrypted wallet back to plaintext. Existing
+ *  seed.txt is regenerated only if user opts in (we deliberately don't write
+ *  it automatically — once you've encrypted, presumably you wanted that). */
+export async function decryptWalletAtRest(passphrase: string): Promise<StoredWallet> {
+  const text = await readFile(WALLET_PATH, "utf8");
+  const parsed = JSON.parse(text);
+  if (!isEncryptedFile(parsed)) {
+    throw new Error("Wallet is not encrypted.");
+  }
+  const wallet = decryptJson<StoredWallet>(parsed as EncryptedFile, passphrase);
+  await saveWallet(wallet);
+  return wallet;
 }
 
 export async function saveSeedReadOnly(mnemonic: string): Promise<void> {
@@ -117,3 +204,6 @@ function bytesToHex(bytes: Uint8Array): `0x${string}` {
 
 export const WALLET_FILE = WALLET_PATH;
 export const SEED_FILE = SEED_PATH;
+export { WrongPassphraseError };
+// Suppress unused-import lint
+void stat;

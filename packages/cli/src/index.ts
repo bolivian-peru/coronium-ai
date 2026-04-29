@@ -2,9 +2,11 @@
 import { Command } from "commander";
 import kleur from "kleur";
 import { CoroniumError } from "coronium-sdk";
+import { buildFormatted, printPretty } from "./format-error.js";
 import { initCommand } from "./commands/init.js";
 import { keyRotateCommand } from "./commands/key.js";
 import { statusCommand } from "./commands/status.js";
+import { walletDecryptCommand, walletEncryptCommand } from "./commands/wallet.js";
 import { balanceCommand } from "./commands/balance.js";
 import { depositCommand } from "./commands/deposit.js";
 import { tariffsCommand } from "./commands/tariffs.js";
@@ -21,7 +23,7 @@ const program = new Command();
 program
   .name("coronium")
   .description("Mobile 4G/5G proxies — pay-per-hour USDC. https://coronium.ai")
-  .version("0.1.0-alpha.2")
+  .version("0.1.0-alpha.3")
   .addHelpText(
     "after",
     [
@@ -37,8 +39,11 @@ program
 program
   .command("init")
   .description("Create or restore a Coronium account (wallet-bound, voucher-gated)")
-  .option("--voucher <code>", "voucher code (cor_v1_…); pass non-interactively")
+  .option("--voucher <code>", "voucher code (cor_v1_…); also reads CORONIUM_VOUCHER env")
   .option("--restore", "skip voucher path; restore an existing account from your wallet")
+  .option("--no-prompt", "headless mode — fail loudly instead of prompting for missing input")
+  .option("--print-mnemonic", "include mnemonic in stdout (only with newly-generated wallets)")
+  .option("--wallet-from <source>", "new | mnemonic | privkey — explicit wallet source")
   .option("--email <email>", "optional email tag (no verification)")
   .option("--api-key <key>", "bypass: just store an existing API key")
   .action((opts, cmd) => initCommand({ ...opts, ...cmd.optsWithGlobals() }));
@@ -52,6 +57,16 @@ program
   .command("status")
   .description("Diagnose: backend reachable? key valid? wallet present?")
   .action((_opts, cmd) => statusCommand(cmd.optsWithGlobals()));
+
+program
+  .command("wallet:encrypt")
+  .description("Encrypt ~/.coronium/wallet.json at rest with a passphrase (AES-256-GCM, scrypt KDF)")
+  .action((_opts, cmd) => walletEncryptCommand(cmd.optsWithGlobals()));
+
+program
+  .command("wallet:decrypt")
+  .description("Decrypt a previously-encrypted wallet back to plaintext (you'll need the passphrase)")
+  .action((_opts, cmd) => walletDecryptCommand(cmd.optsWithGlobals()));
 
 program
   .command("balance")
@@ -109,11 +124,26 @@ proxy
   .action((id, _opts, cmd) => proxyReleaseCommand(id, cmd.optsWithGlobals()));
 
 program.parseAsync(process.argv).catch((e: unknown) => {
+  // JSON mode? Emit machine-readable error envelope on stdout (so it can be
+  // piped reliably). Pretty mode? Emit friendly summary + hints on stderr.
+  const wantsJson = process.argv.includes("--json");
   if (e instanceof CoroniumError) {
-    console.error(kleur.red(`error[${e.code}]`) + ` ${e.message}`);
+    const f = buildFormatted(e);
+    if (wantsJson) {
+      console.log(JSON.stringify({ error: { code: f.code, summary: f.summary, hints: f.hints, status: f.status, raw_message: f.raw_message } }));
+    } else {
+      printPretty(f);
+    }
     process.exit(1);
   }
-  if (e instanceof Error) console.error(kleur.red("error") + ` ${e.message}`);
-  else console.error(kleur.red("error"), e);
+  if (e instanceof Error) {
+    if (wantsJson) {
+      console.log(JSON.stringify({ error: { code: "UNKNOWN", summary: e.message, hints: [], raw_message: e.message } }));
+    } else {
+      console.error(kleur.red("error") + ` ${e.message}`);
+    }
+  } else {
+    console.error(kleur.red("error"), e);
+  }
   process.exit(1);
 });

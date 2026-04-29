@@ -138,3 +138,83 @@ describe("Coronium SDK", () => {
     expect((err as CoroniumError).code).toBe("SPEND_CAP_EXCEEDED");
   });
 });
+
+describe("Coronium SDK — retry + backoff", () => {
+  /**
+   * Build a stub fetch that fails the first N attempts with a configurable
+   * mode, then delegates to the real fetch for attempt N+1. Returns both
+   * the stub and a counter so tests can assert.
+   */
+  function flakyFetch(failCount: number, mode: "503" | "ECONNREFUSED" | "504"): {
+    fetch: typeof globalThis.fetch;
+    calls: { count: number };
+  } {
+    const calls = { count: 0 };
+    const stub: typeof globalThis.fetch = async (input, init) => {
+      calls.count++;
+      if (calls.count <= failCount) {
+        if (mode === "ECONNREFUSED") {
+          const err: Error & { cause?: { code?: string } } = new Error("fetch failed");
+          err.cause = { code: "ECONNREFUSED" };
+          throw err;
+        }
+        const status = mode === "503" ? 503 : 504;
+        return new Response(JSON.stringify({ code: "UPSTREAM_DOWN", message: "stubbed" }), {
+          status,
+          headers: { "content-type": "application/json" },
+        });
+      }
+      // Delegate to real fetch for the success attempt.
+      return globalThis.fetch(input as any, init as any);
+    };
+    return { fetch: stub, calls };
+  }
+
+  it("retries idempotent GET on 503 then succeeds", async () => {
+    const flaky = flakyFetch(2, "503");
+    const c = new Coronium({ apiKey, baseUrl, fetch: flaky.fetch });
+    const b = await c.balance.get();
+    expect(b).toMatchObject({ daily_cap_usd: 50 });
+    expect(flaky.calls.count).toBe(3); // 2 fails + 1 success
+  }, 10_000);
+
+  it("retries idempotent DELETE on ECONNREFUSED then succeeds", async () => {
+    // First buy a proxy normally (no flaky fetch yet).
+    const c0 = new Coronium({ apiKey, baseUrl });
+    const [p] = await c0.proxies.buy({ country: "US", type: "5g" });
+    const flaky = flakyFetch(1, "ECONNREFUSED");
+    const c = new Coronium({ apiKey, baseUrl, fetch: flaky.fetch });
+    await c.proxies.release(p!.id);
+    expect(flaky.calls.count).toBe(2);
+  }, 10_000);
+
+  it("does NOT retry POST /proxies (non-idempotent — would double-charge)", async () => {
+    const flaky = flakyFetch(2, "503");
+    const c = new Coronium({ apiKey, baseUrl, fetch: flaky.fetch });
+    const err = await c.proxies.buy({ country: "US", type: "5g" }).catch((e) => e);
+    expect(err).toBeInstanceOf(CoroniumError);
+    expect(flaky.calls.count).toBe(1); // no retries
+  });
+
+  it("does NOT retry on 4xx (client error — won't change)", async () => {
+    let calls = 0;
+    const stub: typeof globalThis.fetch = async () => {
+      calls++;
+      return new Response(JSON.stringify({ code: "INVALID_KEY", message: "bad key" }), { status: 401 });
+    };
+    const c = new Coronium({ apiKey, baseUrl, fetch: stub });
+    const err = await c.balance.get().catch((e) => e);
+    expect(err).toBeInstanceOf(CoroniumError);
+    expect((err as CoroniumError).code).toBe("INVALID_KEY");
+    expect(calls).toBe(1);
+  });
+
+  it("gives up after 3 retries (4 total attempts) and surfaces the last error", async () => {
+    const flaky = flakyFetch(99, "504");
+    const c = new Coronium({ apiKey, baseUrl, fetch: flaky.fetch });
+    const err = await c.balance.get().catch((e) => e);
+    expect(err).toBeInstanceOf(CoroniumError);
+    expect((err as CoroniumError).status).toBe(504);
+    expect(flaky.calls.count).toBe(4); // initial + 3 retries
+  }, 15_000);
+});
