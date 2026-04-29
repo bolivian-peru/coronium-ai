@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Coronium — mobile 4G/5G proxies for AI agents</title>
+  <meta name="description" content="Mobile 4G/5G proxies. Pay-per-hour USDC. CLI for humans, MCP for AI agents. One API, three surfaces." />
+
+  <!-- Open Graph -->
+  <meta property="og:title" content="Coronium — mobile 4G/5G proxies for AI agents" />
+  <meta property="og:description" content="One npm install. One MCP add. Real mobile carrier IPs in 20+ countries. Pay-per-hour USDC, no email verification, agent-native." />
+  <meta property="og:url" content="https://coronium.ai" />
+  <meta property="og:type" content="website" />
+
+  <!-- Twitter -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Coronium — mobile proxies for AI agents" />
+  <meta name="twitter:description" content="npm install -g coronium-cli. claude mcp add coronium npx -y coronium-mcp. Real mobile IPs, pay-per-hour USDC." />
+
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='28' fill='%23FF6B35'/%3E%3Ctext x='50%25' y='52%25' text-anchor='middle' font-family='ui-monospace,monospace' font-size='32' font-weight='bold' fill='white'%3EC%3C/text%3E%3C/svg%3E" />
+
+  <style>
+    :root {
+      --fg: #0a0e16; --bg: #fafbfc; --bg-soft: #f4f6fa;
+      --muted: #5a6378; --border: #d8dde6;
+      --accent: #ff6b35; --accent-dim: #ffe8df;
+      --good: #1f8a3a; --code-bg: #0d1218; --code-fg: #e6ebf2;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root { --fg: #e6ebf2; --bg: #0d1218; --bg-soft: #131922; --muted: #9aa3b3; --border: #1e2533; --code-bg: #050a12; --code-fg: #f4f6fa; }
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
+    body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--fg); line-height: 1.6; -webkit-font-smoothing: antialiased; }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    nav { display: flex; align-items: center; justify-content: space-between; padding: 1.25rem 1.5rem; max-width: 1100px; margin: 0 auto; }
+    nav .brand { font-weight: 700; font-size: 1.2rem; display: flex; align-items: center; gap: 0.5rem; }
+    nav .brand .dot { width: 24px; height: 24px; background: var(--accent); border-radius: 50%; }
+    nav .links { display: flex; gap: 1.5rem; font-size: 0.95rem; }
+    nav .links a { color: var(--muted); }
+    nav .links a:hover { color: var(--fg); text-decoration: none; }
+
+    .hero { max-width: 880px; margin: 4rem auto 3rem; padding: 0 1.5rem; text-align: center; }
+    .hero h1 { font-size: 3rem; line-height: 1.15; margin: 0 0 1rem; letter-spacing: -0.02em; }
+    .hero .tag { display: inline-block; padding: 0.25rem 0.75rem; background: var(--accent-dim); color: var(--accent); border-radius: 999px; font-size: 0.85rem; font-weight: 500; margin-bottom: 1.5rem; }
+    .hero p.lead { font-size: 1.2rem; color: var(--muted); max-width: 640px; margin: 0 auto 2rem; }
+
+    .install-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; max-width: 880px; margin: 0 auto 3rem; padding: 0 1.5rem; }
+    @media (max-width: 720px) { .install-grid { grid-template-columns: 1fr; } }
+    .install-card { padding: 1.25rem; border: 1px solid var(--border); border-radius: 12px; background: var(--bg-soft); }
+    .install-card h3 { margin: 0 0 0.5rem; font-size: 1rem; color: var(--muted); }
+    .install-card .for { font-size: 0.85rem; color: var(--muted); }
+    .install-card pre { margin: 0.5rem 0 0; padding: 0.85rem 1rem; background: var(--code-bg); color: var(--code-fg); border-radius: 8px; overflow-x: auto; font-size: 0.9rem; line-height: 1.5; }
+
+    .features { max-width: 1100px; margin: 4rem auto; padding: 0 1.5rem; }
+    .features h2 { font-size: 2rem; text-align: center; margin: 0 0 2rem; letter-spacing: -0.01em; }
+    .feature-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.25rem; }
+    .feature { padding: 1.25rem; border: 1px solid var(--border); border-radius: 12px; }
+    .feature .emoji { font-size: 1.5rem; margin-bottom: 0.5rem; display: block; }
+    .feature h4 { margin: 0 0 0.5rem; font-size: 1.05rem; }
+    .feature p { margin: 0; color: var(--muted); font-size: 0.95rem; }
+
+    .verbs { max-width: 880px; margin: 4rem auto; padding: 0 1.5rem; }
+    .verbs h2 { font-size: 1.5rem; margin: 0 0 1rem; }
+    .verbs table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+    .verbs th, .verbs td { padding: 0.6rem 0.75rem; text-align: left; border-bottom: 1px solid var(--border); }
+    .verbs th { font-weight: 600; color: var(--muted); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em; }
+    .verbs code { font-family: ui-monospace, "SF Mono", Monaco, monospace; font-size: 0.85em; padding: 0.1em 0.4em; background: var(--bg-soft); border-radius: 4px; }
+
+    .pricing { max-width: 720px; margin: 4rem auto; padding: 1.75rem 1.5rem; border: 2px solid var(--accent); border-radius: 12px; text-align: center; }
+    .pricing .price { font-size: 2.5rem; font-weight: 700; }
+    .pricing .price .unit { font-size: 1rem; color: var(--muted); font-weight: 400; }
+
+    footer { max-width: 1100px; margin: 5rem auto 2rem; padding: 2rem 1.5rem; border-top: 1px solid var(--border); display: flex; justify-content: space-between; flex-wrap: wrap; gap: 1rem; color: var(--muted); font-size: 0.9rem; }
+    footer .links { display: flex; gap: 1.25rem; flex-wrap: wrap; }
+
+    .badge { display: inline-block; padding: 0.15rem 0.5rem; background: var(--accent-dim); color: var(--accent); border-radius: 4px; font-size: 0.75rem; font-weight: 600; vertical-align: middle; }
+  </style>
+</head>
+<body>
+
+  <nav>
+    <div class="brand"><span class="dot"></span> coronium</div>
+    <div class="links">
+      <a href="#install">Install</a>
+      <a href="https://github.com/bolivian-peru/coronium-ai" target="_blank" rel="noopener">GitHub</a>
+      <a href="https://api.coronium.ai/openapi.yaml">API</a>
+      <a href="https://dashboard.coronium.io">Dashboard</a>
+    </div>
+  </nav>
+
+  <section class="hero">
+    <div class="tag">Agent-native, alpha</div>
+    <h1>Mobile 4G/5G proxies, designed for AI agents.</h1>
+    <p class="lead">
+      Real mobile carrier IPs in 20+ countries. Pay-per-hour USDC. No email verification.
+      One npm install for humans. One MCP add for agents.
+    </p>
+  </section>
+
+  <section class="install-grid" id="install">
+    <div class="install-card">
+      <h3>For developers</h3>
+      <div class="for">CLI in your terminal</div>
+      <pre>npm install -g coronium-cli
+coronium init --voucher cor_v1_…
+coronium proxy get --country US --type 5g</pre>
+    </div>
+    <div class="install-card">
+      <h3>For AI agents</h3>
+      <div class="for">Claude Code · Claude Desktop · Cursor · Windsurf</div>
+      <pre>claude mcp add coronium \
+  npx -y coronium-mcp
+# set CORONIUM_API_KEY in env</pre>
+    </div>
+  </section>
+
+  <section class="features">
+    <h2>Built for the agent era</h2>
+    <div class="feature-grid">
+      <div class="feature">
+        <span class="emoji">🤖</span>
+        <h4>One bearer-token API</h4>
+        <p>No password, no email verification, no OAuth dance. <code>sk_live_…</code> in the env, agents work unattended.</p>
+      </div>
+      <div class="feature">
+        <span class="emoji">🔒</span>
+        <h4>Wallet-bound accounts</h4>
+        <p>Every account is an EVM keypair (BIP-39). Same mnemonic works in MetaMask. Lose the API key? Sign a message; get a new one.</p>
+      </div>
+      <div class="feature">
+        <span class="emoji">💸</span>
+        <h4>Spend caps as law</h4>
+        <p>Server-enforced per-call, per-session, per-day. Your runaway agent can't drain your balance.</p>
+      </div>
+      <div class="feature">
+        <span class="emoji">⚡</span>
+        <h4>Verified rotation</h4>
+        <p>We confirm the new IP changed externally. <code>200</code> means rotated; <code>409 CARRIER_NO_OP</code> means try replace.</p>
+      </div>
+      <div class="feature">
+        <span class="emoji">📡</span>
+        <h4>Stock-validated buys</h4>
+        <p>Out of stock returns <code>409</code> with alternative country/carrier suggestions, before charging anything.</p>
+      </div>
+      <div class="feature">
+        <span class="emoji">🔓</span>
+        <h4>Open-source surfaces</h4>
+        <p>The CLI, MCP, SDK, and even the API server are <a href="https://github.com/bolivian-peru/coronium-ai" target="_blank" rel="noopener">Apache-2.0 on GitHub</a>. Fork, embed, or self-host.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="verbs">
+    <h2>The seven verbs</h2>
+    <p style="color: var(--muted)">Same surface in CLI, REST, and MCP. If a verb stops being needed, it's deprecated in all three at once.</p>
+    <table>
+      <tr><th>Verb</th><th>CLI</th><th>REST</th><th>MCP tool</th></tr>
+      <tr><td>balance</td><td><code>coronium balance</code></td><td><code>GET /v1/balance</code></td><td><code>balance_get</code></td></tr>
+      <tr><td>deposit</td><td><code>coronium deposit</code></td><td><code>POST /v1/deposit/address</code></td><td><code>deposit_address</code></td></tr>
+      <tr><td>tariffs</td><td><code>coronium tariffs</code></td><td><code>GET /v1/tariffs</code></td><td><code>tariff_list</code></td></tr>
+      <tr><td>buy proxy</td><td><code>coronium proxy get</code></td><td><code>POST /v1/proxies</code></td><td><code>proxy_get</code></td></tr>
+      <tr><td>list</td><td><code>coronium proxy list</code></td><td><code>GET /v1/proxies</code></td><td><code>proxy_list</code></td></tr>
+      <tr><td>rotate</td><td><code>coronium proxy rotate &lt;id&gt;</code></td><td><code>POST /v1/proxies/{id}/rotate</code></td><td><code>proxy_rotate</code></td></tr>
+      <tr><td>release</td><td><code>coronium proxy release &lt;id&gt;</code></td><td><code>DELETE /v1/proxies/{id}</code></td><td><code>proxy_release</code></td></tr>
+    </table>
+  </section>
+
+  <section class="pricing">
+    <p>One tier, one number.</p>
+    <div class="price">$0.02<span class="unit"> / proxy / hour</span></div>
+    <p style="margin: 0.5rem 0 0; color: var(--muted)">Prorated per second. 60-second minimum. $50/day default cap.</p>
+  </section>
+
+  <footer>
+    <div>© 2026 Coronium · Apache-2.0 license</div>
+    <div class="links">
+      <a href="https://github.com/bolivian-peru/coronium-ai" target="_blank" rel="noopener">GitHub</a>
+      <a href="https://www.npmjs.com/package/coronium-cli" target="_blank" rel="noopener">npm</a>
+      <a href="https://api.coronium.ai/openapi.yaml">OpenAPI</a>
+      <a href="/llms.txt">llms.txt</a>
+      <a href="/AGENTS.md">AGENTS.md</a>
+      <a href="mailto:support@coronium.io">support@coronium.io</a>
+    </div>
+  </footer>
+
+</body>
+</html>

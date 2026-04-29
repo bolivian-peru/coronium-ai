@@ -1,0 +1,369 @@
+openapi: 3.1.0
+info:
+  title: Coronium API
+  version: 0.1.0
+  summary: Mobile 4G/5G proxy infrastructure — agent-native API.
+  description: |
+    Coronium provides mobile mobile-carrier proxies (4G/5G) via a single REST API.
+    Authenticate with a `sk_live_` API key. Pay-per-hour USDC or Stripe.
+
+    **For AI agents:**
+    - MCP server: `npx @coronium/mcp` (env: `CORONIUM_API_KEY`)
+    - TypeScript SDK: `npm install @coronium/sdk-ts`
+    - Python SDK: `pip install coronium-sdk`
+    - CLI: `npm install -g @coronium/cli`
+    - Agent discovery files: `https://coronium.io/llms.txt`, `https://coronium.io/AGENTS.md`
+
+    **Auth model:** API key = account. No password, no email verification.
+    `POST /v1/account/create` issues a key + a USDC deposit address. One call, no human in the loop.
+
+    **Pricing:** $0.02/proxy/hour, prorated per second, 60-second minimum. Single tier.
+
+    **Spend caps (server-enforced):**
+    - $50/day per API key (default; raise via dashboard)
+    - $5/session per agent run (override with `X-Cost-Cap-Cents` header)
+    - $500/day per tenant (hard ceiling)
+
+    **Error codes** are stable. Read `code` field, not `message`.
+  contact:
+    email: support@coronium.io
+    url: https://coronium.io
+  license:
+    name: Proprietary
+
+servers:
+  - url: https://api.coronium.ai/v1
+    description: Production
+  - url: http://localhost:5000/api/v1
+    description: Local development
+
+security:
+  - BearerAuth: []
+  - X402: []
+
+tags:
+  - name: Account
+    description: Create account, manage keys, check balance, deposit funds.
+  - name: Tariffs
+    description: Available proxy plans (country, carrier, period, price).
+  - name: Proxies
+    description: Buy, list, rotate, replace, release proxies. The 7 verbs the agent surface is built around.
+
+paths:
+  /account/create:
+    post:
+      tags: [Account]
+      summary: Create a new account (issues API key + deposit address)
+      description: |
+        One call, no human-in-the-loop. Returns `sk_live_` API key (shown ONCE), USDC deposit address on Base, $0.50 trial credit.
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  format: email
+                  description: Optional. For receipts only — no verification required.
+            example: { email: "alex@example.com" }
+      responses:
+        '201':
+          description: Account created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AccountCreated' }
+        '429':
+          description: Rate limited (too many account creations from same IP)
+
+  /balance:
+    get:
+      tags: [Account]
+      summary: Get current USDC balance + spend limits
+      security: [{ BearerAuth: [] }]
+      responses:
+        '200':
+          description: Balance + limits
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Balance' }
+
+  /deposit/address:
+    post:
+      tags: [Account]
+      summary: Get a USDC deposit address (Base, Tron, or Ethereum)
+      security: [{ BearerAuth: [] }]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                chain: { type: string, enum: [base, tron, ethereum], default: base }
+                amount_usd: { type: number, description: "Optional — pre-creates an invoice + QR if set" }
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/DepositAddress' }
+
+  /tariffs:
+    get:
+      tags: [Tariffs]
+      summary: List available proxy plans
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - in: query
+          name: country
+          schema: { type: string, description: "ISO-2 e.g. US, GB, DE" }
+        - in: query
+          name: carrier
+          schema: { type: string, description: "e.g. tmobile, verizon, three" }
+        - in: query
+          name: type
+          schema: { type: string, enum: [4g, 5g] }
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Tariff' }
+
+  /proxies:
+    get:
+      tags: [Proxies]
+      summary: List your active proxies
+      security: [{ BearerAuth: [] }]
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Proxy' }
+    post:
+      tags: [Proxies]
+      summary: Buy a proxy
+      description: |
+        The hero verb. Most agents will only ever call this + `/proxies/{id}/rotate` + `/proxies` (list).
+
+        Stock-validated before charging — `409` if no matching proxy is in stock.
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - in: header
+          name: X-Cost-Cap-Cents
+          schema: { type: integer }
+          description: Override the per-session spend cap for this single call (cents).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/BuyProxyRequest' }
+            examples:
+              minimal:
+                summary: Country only — system picks best carrier
+                value: { country: US, type: 5g }
+              specific:
+                summary: Country + carrier + auto-rotate every 10 min, sticky for 8h
+                value: { country: US, type: 5g, carrier: tmobile, rotation: 10m, ttl: 8h }
+              bulk:
+                summary: 5 proxies at once
+                value: { country: DE, type: 4g, qty: 5 }
+      responses:
+        '201':
+          description: Proxy provisioned
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Proxy' }
+        '402':
+          description: Payment required (insufficient balance)
+        '409':
+          description: Out of stock for the requested country/carrier
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/StockOutError' }
+
+  /proxies/{id}:
+    delete:
+      tags: [Proxies]
+      summary: Release a proxy (no proration, charged through end-of-current-hour)
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, example: "px_01HX8A9R3K2Q" }
+      responses:
+        '204': { description: Released }
+        '404': { description: Proxy not found or not yours }
+
+  /proxies/{id}/rotate:
+    post:
+      tags: [Proxies]
+      summary: Rotate the IP on a proxy
+      description: |
+        Returns when the new IP is confirmed (verified by Coronium against an external endpoint —
+        we never report success on a no-op rotation).
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: New IP confirmed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ip_before: { type: string, format: ipv4 }
+                  ip_after:  { type: string, format: ipv4 }
+                  duration_ms: { type: integer }
+        '409':
+          description: Carrier did not release IP after auto-retries
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code: { type: string, example: "CARRIER_NO_OP" }
+                  message: { type: string }
+                  retries: { type: integer }
+                  ip: { type: string, description: "IP did not change" }
+
+  /proxies/{id}/replace:
+    post:
+      tags: [Proxies]
+      summary: Replace a broken proxy with a fresh modem in the same country/carrier
+      description: |
+        For when rotation can't recover a stuck modem. Atomic — old modem released, new modem assigned, credentials returned.
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Proxy' }
+        '409':
+          description: No replacement available in same country/carrier
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT-style sk_live_ key
+    X402:
+      type: apiKey
+      in: header
+      name: X-Payment-Mode
+      description: |
+        Set to `x402` to pay-per-call via x402 (USDC on Base via EIP-3009). Server returns 402 with payment requirements;
+        retry the same call with `X-PAYMENT: <base64 JSON>` header.
+
+  schemas:
+    AccountCreated:
+      type: object
+      required: [account_id, api_key, deposit_address_usdc_base]
+      properties:
+        account_id: { type: string, example: "acc_01HX..." }
+        api_key:    { type: string, example: "sk_live_...", description: "Shown once. Store safely." }
+        deposit_address_usdc_base: { type: string, example: "0xAbC...1234" }
+        balance_usd: { type: number, example: 0.50, description: "Trial credit on signup" }
+        daily_spend_cap_usd: { type: number, example: 50.00 }
+
+    Balance:
+      type: object
+      properties:
+        usdc:                       { type: string, description: "USDC available, dollars" }
+        hours_at_current_burn:      { type: string }
+        active_proxies:             { type: integer }
+        spend_today_usd:            { type: number }
+        daily_cap_usd:              { type: number }
+        session_cap_usd:            { type: number }
+
+    DepositAddress:
+      type: object
+      properties:
+        chain:    { type: string, enum: [base, tron, ethereum] }
+        address:  { type: string }
+        qr:       { type: string, description: "Data URL for a QR PNG" }
+        expires_at: { type: string, format: date-time }
+        amount_usd: { type: number, nullable: true }
+
+    Tariff:
+      type: object
+      properties:
+        id:          { type: string }
+        country:     { type: string, example: "US" }
+        carrier:     { type: string, example: "T-Mobile" }
+        type:        { type: string, enum: [4g, 5g] }
+        period_hours: { type: integer, example: 24 }
+        price_usd:   { type: number, example: 0.48 }
+        in_stock:    { type: boolean }
+
+    BuyProxyRequest:
+      type: object
+      required: [country]
+      properties:
+        country:  { type: string, description: "ISO-2 country code" }
+        type:     { type: string, enum: [4g, 5g], default: 5g }
+        carrier:  { type: string, description: "Optional. e.g. tmobile, verizon" }
+        qty:      { type: integer, default: 1, minimum: 1, maximum: 50 }
+        ttl:      { type: string, description: "Initial subscription length, e.g. 1h, 8h, 24h, 7d, 30d" }
+        rotation: { type: string, description: "Auto-rotation interval, e.g. 10m, 1h. Omit for manual rotate only." }
+        sticky:   { type: boolean, default: false, description: "Keep same IP across requests (carrier-dependent)" }
+        os:       { type: string, enum: ["", android:1, android:3, ios:1, ios:2, macosx:3, macosx:4, windows:1], description: "TCP fingerprint spoof" }
+
+    Proxy:
+      type: object
+      required: [id, host, port_http, port_socks5, username, password, country, type, ip, expires_at, price_per_hour_usdc, rotation_policy]
+      properties:
+        id:                  { type: string, example: "px_01HX8A9R3K2Q" }
+        host:                { type: string, example: "gw-us-east.coronium.io" }
+        port_http:           { type: integer, example: 8443 }
+        port_socks5:         { type: integer, example: 5443 }
+        username:            { type: string }
+        password:            { type: string }
+        country:             { type: string, example: "US" }
+        region:              { type: string, example: "US-East" }
+        carrier:             { type: string, example: "T-Mobile" }
+        type:                { type: string, enum: [4g, 5g] }
+        ip:                  { type: string, description: "Current external IP" }
+        os:                  { type: string, description: "Active TCP fingerprint, '' = no spoof" }
+        created_at:          { type: string, format: date-time }
+        expires_at:          { type: string, format: date-time }
+        rotate_url:          { type: string, format: uri, description: "Token-authenticated, no API key needed — safe to embed in scripts" }
+        price_per_hour_usdc: { type: string, example: "0.02" }
+        rotation_policy:
+          type: string
+          enum: [manual, every_5m, every_10m, every_30m, every_1h, sticky_session]
+
+    StockOutError:
+      type: object
+      properties:
+        code: { type: string, example: "STOCK_OUT" }
+        message: { type: string }
+        country: { type: string }
+        carrier: { type: string }
+        suggestion:
+          type: object
+          properties:
+            available_now:
+              type: array
+              items:
+                type: object
+                properties:
+                  country: { type: string }
+                  carrier: { type: string }
+                  in_stock: { type: integer }

@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Get a free Coronium voucher</title>
+  <meta name="description" content="Claim a free Coronium voucher to sign up for $0.50 of mobile-proxy trial credit." />
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='28' fill='%23FF6B35'/%3E%3Ctext x='50%25' y='52%25' text-anchor='middle' font-family='ui-monospace,monospace' font-size='32' font-weight='bold' fill='white'%3EC%3C/text%3E%3C/svg%3E" />
+  <style>
+    :root { --fg: #0a0e16; --bg: #fafbfc; --bg-soft: #f4f6fa; --muted: #5a6378; --border: #d8dde6; --accent: #ff6b35; --good: #1f8a3a; --code-bg: #0d1218; --code-fg: #e6ebf2; }
+    @media (prefers-color-scheme: dark) {
+      :root { --fg: #e6ebf2; --bg: #0d1218; --bg-soft: #131922; --muted: #9aa3b3; --border: #1e2533; --code-bg: #050a12; --code-fg: #f4f6fa; }
+    }
+    * { box-sizing: border-box; }
+    body { font-family: system-ui, sans-serif; background: var(--bg); color: var(--fg); margin: 0; padding: 0; line-height: 1.6; }
+    main { max-width: 520px; margin: 4rem auto; padding: 0 1.5rem; }
+    h1 { margin: 0 0 0.5rem; font-size: 2rem; letter-spacing: -0.01em; }
+    .lead { color: var(--muted); margin: 0 0 2rem; }
+    form { padding: 1.5rem; border: 1px solid var(--border); border-radius: 12px; background: var(--bg-soft); }
+    label { display: block; font-size: 0.9rem; font-weight: 500; margin-bottom: 0.4rem; }
+    input, select { width: 100%; padding: 0.6rem 0.75rem; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); color: var(--fg); font: inherit; font-size: 0.95rem; margin-bottom: 1rem; }
+    button { width: 100%; padding: 0.7rem 1rem; background: var(--accent); color: white; border: none; border-radius: 6px; font-weight: 500; font-size: 1rem; cursor: pointer; }
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
+    .ok { padding: 1.25rem; border: 1px solid var(--good); color: var(--good); border-radius: 8px; margin-top: 1rem; }
+    .ok h2 { margin: 0 0 0.5rem; font-size: 1.1rem; }
+    pre { background: var(--code-bg); color: var(--code-fg); padding: 0.85rem 1rem; border-radius: 6px; overflow-x: auto; font-size: 0.9rem; user-select: all; word-break: break-all; }
+    .alert { padding: 0.85rem; background: rgba(192, 57, 43, 0.1); color: #c0392b; border-radius: 6px; margin-top: 1rem; }
+    a { color: var(--accent); }
+  </style>
+</head>
+<body>
+  <main>
+    <p style="margin: 0 0 1rem"><a href="/">← coronium.ai</a></p>
+    <h1>Get a free voucher</h1>
+    <p class="lead">$0.50 of trial credit on signup. Voucher gets you past spam protection — no credit card needed.</p>
+
+    <form id="form">
+      <label for="email">Email <span style="color: var(--muted); font-weight: 400">(for the voucher delivery)</span></label>
+      <input id="email" type="email" required placeholder="alex@example.com" autofocus autocomplete="email" />
+
+      <label for="use">What will you use it for?</label>
+      <select id="use">
+        <option value="">Pick one…</option>
+        <option value="ai-agent">Building an AI agent</option>
+        <option value="scraping">Web scraping / data collection</option>
+        <option value="testing">QA testing across geographies</option>
+        <option value="reseller">Evaluating for a reseller integration</option>
+        <option value="learning">Just curious / learning</option>
+        <option value="other">Other</option>
+      </select>
+
+      <button id="submit" type="submit">Email me a voucher</button>
+    </form>
+
+    <div id="result"></div>
+
+    <hr style="margin: 3rem 0; border: 0; border-top: 1px solid var(--border)" />
+
+    <h2 style="font-size: 1.1rem">What to do with your voucher</h2>
+    <pre>npm install -g coronium-cli
+coronium init --voucher cor_v1_&lt;your-code&gt;
+coronium proxy get --country US --type 5g</pre>
+    <p style="color: var(--muted); font-size: 0.9rem">
+      The CLI generates an EVM wallet locally. Your voucher pairs with that wallet and an API key is issued — all in one command.
+    </p>
+  </main>
+
+  <script>
+    const API = window.CORONIUM_API_BASE ?? "https://api.coronium.ai/v1";
+
+    document.getElementById("form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const email = document.getElementById("email").value.trim().toLowerCase();
+      const use = document.getElementById("use").value;
+      const submit = document.getElementById("submit");
+      const result = document.getElementById("result");
+
+      submit.disabled = true;
+      submit.textContent = "Sending…";
+      result.innerHTML = "";
+
+      try {
+        const res = await fetch(`${API}/vouchers/claim-free`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, intent: use }),
+        });
+
+        const body = await res.json().catch(() => ({}));
+
+        if (res.ok) {
+          result.innerHTML = `
+            <div class="ok">
+              <h2>Voucher emailed</h2>
+              <p>Check ${escape(email)} for your voucher code (and your spam folder, just in case).</p>
+              <p>The email will tell you how to redeem with <code>coronium init</code>.</p>
+            </div>`;
+        } else {
+          const code = body.code ?? `HTTP_${res.status}`;
+          const message =
+            code === "RATE_LIMITED" ? "We've already sent a voucher to this email or IP today. Try again tomorrow."
+            : code === "INVALID_REQUEST" ? "Email looks invalid. Double-check and try again."
+            : body.message ?? "Something went wrong. Try again or email support@coronium.io.";
+          result.innerHTML = `<div class="alert"><strong>${escape(code)}</strong>: ${escape(message)}</div>`;
+        }
+      } catch (err) {
+        result.innerHTML = `
+          <div class="alert">
+            <strong>Network error.</strong> Is api.coronium.ai reachable? If this is alpha and the backend isn't deployed yet, try again later.
+          </div>`;
+      } finally {
+        submit.disabled = false;
+        submit.textContent = "Email me a voucher";
+      }
+    });
+
+    function escape(s) {
+      return String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]));
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,65 @@
+# Coronium
+
+Mobile 4G/5G proxies in 20+ countries. Pay-per-hour USDC. Agent-native API.
+
+## How agents use this
+
+- **MCP server** (Claude / Cursor / Windsurf): `npx -y coronium-mcp` — env: `CORONIUM_API_KEY`
+- **REST API**: https://api.coronium.ai/v1/  (OpenAPI: https://api.coronium.ai/openapi.yaml)
+- **TypeScript SDK**: `npm install coronium-sdk`
+- **CLI** (humans): `npm install -g coronium-cli`
+
+## Quickstart (60 seconds)
+
+1. Get a free voucher at https://coronium.ai/free
+2. `npm install -g coronium-cli`
+3. `coronium init --voucher cor_v1_…` — generates an EVM wallet, signs SIWE, returns API key
+4. `coronium proxy get --country US --type 5g` — buys a real mobile proxy
+
+## The 7 verbs (the entire API surface)
+
+| Verb | REST | MCP tool |
+|---|---|---|
+| Get balance | `GET /v1/balance` | `balance_get` |
+| Deposit address | `POST /v1/deposit/address` | `deposit_address` |
+| List tariffs | `GET /v1/tariffs` | `tariff_list` |
+| Buy proxy | `POST /v1/proxies` | `proxy_get` |
+| List active | `GET /v1/proxies` | `proxy_list` |
+| Rotate IP | `POST /v1/proxies/{id}/rotate` | `proxy_rotate` |
+| Replace broken proxy | `POST /v1/proxies/{id}/replace` | `proxy_replace` |
+| Release | `DELETE /v1/proxies/{id}` | `proxy_release` |
+
+## Constraints (server-enforced)
+
+- **Pricing**: $0.02/proxy/hour, prorated per second, 60-second minimum
+- **Daily spend cap**: $50/day per API key (default; raise via dashboard or `X-Cost-Cap-Cents` override)
+- **Per-session cap**: $5/agent run (override with `X-Cost-Cap-Cents` header)
+- **Stock-validated**: `POST /v1/proxies` returns `409 STOCK_OUT` (with suggestions) before charging if no matching proxy in stock
+- **Rotation verified**: `POST /v1/proxies/{id}/rotate` confirms the new IP against an external endpoint — never reports success on a no-op
+
+## Auth
+
+`Authorization: Bearer sk_live_…` on every request. The API key is bound to an EVM wallet (BIP39 mnemonic, default `m/44'/60'/0'/0/0` derivation). Lose the API key? Sign a wallet message via `coronium key:rotate` to get a new one. Lose the wallet too? Restore from mnemonic via `coronium init --restore`.
+
+For pay-per-call USDC (no account, no balance): set `X-Payment-Mode: x402` and follow the EIP-3009 flow (alpha, behind a feature flag).
+
+## Error codes
+
+`code` field is stable. Read `code`, not `message`. Common: `STOCK_OUT`, `INSUFFICIENT_BALANCE`, `CARRIER_NO_OP`, `RATE_LIMITED`, `INVALID_KEY`, `SPEND_CAP_EXCEEDED`, `WALLET_ALREADY_REGISTERED`, `VOUCHER_CONSUMED`.
+
+## What this API is not
+
+- Not a residential / datacenter proxy reseller — these are real mobile carrier IPs (4G/5G).
+- Not a scraping framework — bring your own client.
+- Not for cancellation / billing-history calls — those go through the dashboard.
+
+## Links
+
+- Marketing: https://coronium.ai
+- Free voucher: https://coronium.ai/free
+- Dashboard (humans): https://dashboard.coronium.io
+- Open-source: https://github.com/bolivian-peru/coronium-ai
+- Agent docs: https://coronium.ai/AGENTS.md
+- OpenAPI spec: https://api.coronium.ai/openapi.yaml
+- Status: https://status.coronium.ai (tba)
+- Support: support@coronium.io
