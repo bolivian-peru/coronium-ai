@@ -23,7 +23,7 @@ const program = new Command();
 program
   .name("coronium")
   .description("Mobile 4G/5G proxies — pay-per-hour USDC. https://coronium.ai")
-  .version("0.1.0-alpha.3")
+  .version("0.1.0-alpha.4")
   .addHelpText(
     "after",
     [
