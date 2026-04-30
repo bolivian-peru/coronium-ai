@@ -19,10 +19,7 @@ Two MCP servers exist and both hit the same backend (`https://api.coronium.io/ap
 
 The two MCPs are intentional siblings, not duplicates — different auth model, different tool depth. Once signed in, both produce JWTs against the same API, so you can switch later if needs change.
 
-
-The reference backend is [Coronium](https://coronium.ai), served live at `https://api.coronium.io/api/v3` — the same API powering the legacy customer dashboard, with the new wallet-bound + voucher-gated signup routes added directly to it (no separate gateway). The OpenAPI contract is the integration boundary, so anyone can host an alternative backend behind the same shape. Affiliate program for resellers and integrators below.
-
-> **`apps/api/` was a separate Fastify gateway** that we ran as a BFF in front of `coronium-backend`. It's been collapsed: the wallet-signup routes (`/wallet-challenge` + `/wallet-signup` + `/wallet-key/rotate*`) now live directly on `api.coronium.io/api/v3`. The folder remains as a reference Fastify implementation and a local-dev mock — it is no longer the production backend.
+The backend is [Coronium](https://coronium.ai), served live at `https://api.coronium.io/api/v3` — Coronium's main production API, powering both the customer dashboard and the agent-native flows in this repo. Wallet-bound + voucher-gated signup routes are wired into the same surface, so there's exactly one API, one auth shape, one set of OpenAPI types. The contract is the integration boundary, so anyone can host an alternative backend behind the same shape. Affiliate program for resellers and integrators below.
 
 ---
 

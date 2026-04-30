@@ -6,12 +6,12 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 
 ## [0.2.0-beta.1] — 2026-04-30
 
-### Changed — single backend, no separate gateway
+### Changed — single backend
 
-`apps/api/` is no longer the production backend. Wallet-bound signup,
-key rotation, and the 7 proxy verbs all live directly on the existing
-Coronium API at **`https://api.coronium.io/api/v3`** — same backend that
-serves the legacy customer dashboard.
+Wallet-bound signup, key rotation, and the 7 proxy verbs all live
+directly on the production Coronium API at
+**`https://api.coronium.io/api/v3`** — Coronium's main production API,
+powering both the customer dashboard and agent-native flows.
 
 - **CLI / SDK / MCP** all default to `https://api.coronium.io/api/v3`
   (was `api.coronium.ai/v1`).
@@ -23,7 +23,7 @@ serves the legacy customer dashboard.
   - `POST /wallet-key/rotate {message, signature}` → fresh JWT
 - **Voucher claim is atomic** — single `findOneAndUpdate` so two parallel
   signups can't double-spend a code.
-- **Credit lands in the same `Balance` ledger** that legacy customers
+- **Credit lands in the same `Balance` ledger** that all customers
   use, so wallet-bound users can immediately spend on `/payment/buy-modems-with-crypto-balance`.
 
 ### Why this matters
