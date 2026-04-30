@@ -1,6 +1,17 @@
-# coronium-api
+# coronium-api (reference Fastify implementation — NOT the production backend)
 
-Production server implementing [`coronium-ai/openapi.yaml`](../../openapi.yaml). Deploys to `api.coronium.ai`. Translates the agent-native 7-verb API into calls against the existing `cor-api-v1` backend (modems, payments, ProxySmart).
+> **Status as of 2026-04-30:** the production wallet-bound signup flow runs **directly on `https://api.coronium.io/api/v3`** — Coronium's main production API. This folder is preserved as a reference implementation for forks who want to host their own backend behind the same wire format.
+>
+> If you're integrating against Coronium production:
+> - Base URL: `https://api.coronium.io/api/v3`
+> - Signup: `POST /wallet-challenge` + `POST /wallet-signup` (SIWE)
+> - The CLI (`coronium init`), MCP (`coronium-mcp`), and SDK (`coronium-sdk`) all default to that URL — no setup needed.
+>
+> The original gateway plan (this server forwarding to `cor-api-v1`) was collapsed: the wallet-auth routes were mounted directly on the main API instead, removing an entire deployment surface.
+
+---
+
+Reference Fastify server implementing [`coronium-ai/openapi.yaml`](../../openapi.yaml). Originally intended for `api.coronium.ai` deployment; now kept as a self-host template. Translates the agent-native 7-verb API into calls against an upstream Express monolith (modems, payments, ProxySmart).
 
 ## Architecture
 
