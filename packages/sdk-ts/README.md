@@ -68,7 +68,7 @@ try {
 }
 ```
 
-Stable codes: `MISSING_KEY`, `INVALID_KEY`, `STOCK_OUT`, `INSUFFICIENT_BALANCE`, `SPEND_CAP_EXCEEDED`, `DAILY_CAP_EXCEEDED`, `CARRIER_NO_OP`, `RATE_LIMITED`, `VOUCHER_*`, `WALLET_*`. See the [OpenAPI spec](https://api.coronium.ai/openapi.yaml) for the full list.
+Stable codes: `MISSING_KEY`, `INVALID_KEY`, `STOCK_OUT`, `INSUFFICIENT_BALANCE`, `SPEND_CAP_EXCEEDED`, `DAILY_CAP_EXCEEDED`, `CARRIER_NO_OP`, `RATE_LIMITED`, `VOUCHER_*`, `WALLET_*`. See the [OpenAPI spec](https://dashboard.coronium.io/api-docs/) for the full list.
 
 ## Spend caps
 
@@ -107,8 +107,8 @@ You don't need to do anything to enable this. If you'd rather control retries yo
 
 ```ts
 const c = new Coronium({
-  apiKey: "sk_live_…",                            // required
-  baseUrl: "https://api.coronium.ai/v1",          // default; override for staging / local mock
+  apiKey: "eyJhbGc…",                            // required
+  baseUrl: "https://api.coronium.io/api/v3",          // default; override for staging / local mock
   costCapCents: 500,                              // optional global per-call cap
   userAgent: "my-scraper/1.0",                    // shows up in API logs
   timeoutMs: 30_000,                              // per-attempt timeout
@@ -116,7 +116,7 @@ const c = new Coronium({
 });
 ```
 
-`baseUrl` accepts the public API (`https://api.coronium.ai/v1`), a self-hosted instance, or a local development mock (e.g., `http://127.0.0.1:5050/v1` running [coronium-ai/apps/mock-api](https://github.com/bolivian-peru/coronium-ai/tree/main/apps/mock-api)).
+`baseUrl` accepts the public API (`https://api.coronium.io/api/v3`), a self-hosted instance, or a local development mock (e.g., `http://127.0.0.1:5050/v1` running [coronium-ai/apps/mock-api](https://github.com/bolivian-peru/coronium-ai/tree/main/apps/mock-api)).
 
 ## Browser usage
 
@@ -128,11 +128,11 @@ const c = new Coronium({ apiKey: window.__CORONIUM_KEY__ });
 const balance = await c.balance.get();
 ```
 
-> **Storage warning:** never put `sk_live_…` keys in `localStorage` long-term. They're bearer credentials. Prefer first-party HTTP-only cookies or short-lived bootstrap tokens. See the [embed-signup security guide](https://github.com/bolivian-peru/coronium-ai/blob/main/skills/embed-signup/references/security.md).
+> **Storage warning:** never put `eyJhbGc…` keys in `localStorage` long-term. They're bearer credentials. Prefer first-party HTTP-only cookies or short-lived bootstrap tokens. See the [embed-signup security guide](https://github.com/bolivian-peru/coronium-ai/blob/main/skills/embed-signup/references/security.md).
 
 ## Reference
 
-- API spec: <https://api.coronium.ai/openapi.yaml>
+- API spec: <https://dashboard.coronium.io/api-docs/>
 - Coronium homepage: <https://coronium.ai>
 - Source: <https://github.com/bolivian-peru/coronium-ai/tree/main/packages/sdk-ts>
 - Companion packages:

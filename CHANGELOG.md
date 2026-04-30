@@ -4,6 +4,60 @@ All notable changes to the `coronium-ai` packages.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Pre-1.0 we publish under the `alpha` npm tag and may break minor versions.
 
+## [0.2.0-beta.1] — 2026-04-30
+
+### Changed — single backend, no separate gateway
+
+`apps/api/` is no longer the production backend. Wallet-bound signup,
+key rotation, and the 7 proxy verbs all live directly on the existing
+Coronium API at **`https://api.coronium.io/api/v3`** — same backend that
+serves the legacy customer dashboard.
+
+- **CLI / SDK / MCP** all default to `https://api.coronium.io/api/v3`
+  (was `api.coronium.ai/v1`).
+- **Two new public routes** added directly to coronium-backend:
+  - `POST /wallet-challenge {wallet_address, voucher}` → SIWE message
+  - `POST /wallet-signup {wallet_address, voucher, message, signature}` → JWT API token
+- **Two new authed routes** for key rotation:
+  - `POST /wallet-key/rotate-challenge`
+  - `POST /wallet-key/rotate {message, signature}` → fresh JWT
+- **Voucher claim is atomic** — single `findOneAndUpdate` so two parallel
+  signups can't double-spend a code.
+- **Credit lands in the same `Balance` ledger** that legacy customers
+  use, so wallet-bound users can immediately spend on `/payment/buy-modems-with-crypto-balance`.
+
+### Why this matters
+
+Removed an entire deployment surface: no `apps/api` PM2 process, no
+`api.coronium.ai` DNS, no `UPSTREAM_API_TOKEN` rotation, no SQLite-to-Mongo
+migration. The `coronium init --voucher cor_v1_…` flow works **today**
+against production with no additional infra.
+
+### Out of scope (kept for later)
+
+- `apps/api/` Fastify code is preserved as a reference implementation and
+  local-dev mock — useful for forks who want to host their own backend
+  with the same wire format.
+- The hosted `coronium.ai/llms.txt`, `/AGENTS.md`, and `/openapi.yaml`
+  endpoints are not yet live. The canonical OpenAPI is at
+  `https://dashboard.coronium.io/api-docs/` (Swagger UI).
+
+### Verification
+
+End-to-end test passed against `https://api.coronium.io/api/v3` from a
+clean local install:
+
+```
+$ coronium init --voucher cor_v1_…
+✓ Account created: 69f367c892697e245190a9fc
+  wallet         0x3b217c7a514943c2f2f8d23bee18b51569acd5fa
+  api key        eyJhbGc…
+  trial credit   $10.00
+$ coronium status
+backend     ✓ ok (225ms)
+auth        ✓ valid
+```
+
 ## [unreleased]
 
 ### Added — wallet-bound voucher signup (EVM + SIWE)

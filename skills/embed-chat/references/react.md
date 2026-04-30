@@ -10,7 +10,7 @@ import { useEffect, useRef, useState } from "react";
 export interface CoroniumChatProps {
   /** sk_live_… key. Get one via embed-signup or the CLI. */
   apiKey: string;
-  /** Default: https://api.coronium.ai/v1 */
+  /** Default: https://api.coronium.io/api/v3 */
   apiBase?: string;
   /** Optional reseller branding. */
   brand?: {
@@ -47,7 +47,7 @@ interface ToolCall {
   result?: { ok: boolean; data?: unknown; error?: { code: string; message: string } };
 }
 
-const DEFAULT_API = "https://api.coronium.ai/v1";
+const DEFAULT_API = "https://api.coronium.io/api/v3";
 
 export function CoroniumChat({
   apiKey,

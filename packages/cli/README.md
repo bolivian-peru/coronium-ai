@@ -102,13 +102,13 @@ Coronium uses a **wallet-bound, voucher-gated** signup model. Two credentials, n
 - A **voucher** (`cor_v1_<32 chars>`) — single-use, gates signup. Distributed by Coronium and partners. Bearer-revealable but useless on its own (a stolen voucher just gets the thief $0.50 of trial credit and a binding to whatever wallet they choose).
 - An **EVM wallet** — your immutable account identity. The CLI generates a fresh wallet for you on first run (BIP-39, default derivation `m/44'/60'/0'/0/0`). The same mnemonic works in MetaMask, Rabby, Coinbase Wallet, and every other EVM wallet. The wallet doubles as your USDC deposit address — send USDC on Base / Arbitrum / Optimism / Ethereum directly to it to top up.
 
-The third credential — the `sk_live_…` API key — is just an **operational token**. You can rotate it any time by signing a SIWE challenge with the wallet (`coronium key:rotate`).
+The third credential — the `eyJhbGc…` API key — is just an **operational token**. You can rotate it any time by signing a SIWE challenge with the wallet (`coronium key:rotate`).
 
 ### Recovery hierarchy (most-likely → least-likely loss)
 
 | What you lose | Recoverable? | Command |
 |---|---|---|
-| `sk_live_…` API key | **Yes** | `coronium key:rotate` (signs with current wallet) |
+| `eyJhbGc…` API key | **Yes** | `coronium key:rotate` (signs with current wallet) |
 | `~/.coronium/wallet.json` (but kept the mnemonic) | **Yes** | `coronium init --restore` (rebuild from 12 words) |
 | Wallet AND mnemonic | **No** | Same deal as any crypto wallet — write down the seed phrase |
 
@@ -154,7 +154,7 @@ coronium init --voucher cor_v1_K7F3abcdef…
 2. Generates an EVM wallet locally (or imports an existing mnemonic / private key — see flags below).
 3. Asks the API for a SIWE challenge bound to (voucher, your wallet address, fresh nonce).
 4. Signs the challenge with your wallet's private key (gas-free, EIP-191 personal_sign).
-5. Posts the signature back to the API. Server verifies, atomically consumes the voucher, mints your account, returns an `sk_live_…` key.
+5. Posts the signature back to the API. Server verifies, atomically consumes the voucher, mints your account, returns an `eyJhbGc…` key.
 6. Saves wallet to `~/.coronium/wallet.json` (mode `0600`), seed to `~/.coronium/seed.txt` (mode `0400`), API key to `~/.coronium/config.toml` (mode `0600`).
 7. Prints the seed phrase **once**, prominently. Save it.
 
@@ -187,7 +187,7 @@ CORONIUM_NON_INTERACTIVE=1 \
   coronium init --restore --json
 ```
 
-The CLI signs a `key:rotate` SIWE challenge with your wallet, the server matches the wallet to your account, and you get a fresh `sk_live_…`.
+The CLI signs a `key:rotate` SIWE challenge with your wallet, the server matches the wallet to your account, and you get a fresh `eyJhbGc…`.
 
 ### `coronium key:rotate` — refresh the API key
 
@@ -196,7 +196,7 @@ Useful if the key leaked, was committed to a repo by accident, or you just want 
 ```bash
 coronium key:rotate
 # ✓ New API key issued. Old keys revoked.
-#   api key  sk_live_NEW_KEY…
+#   api key  eyJhbGc…NEW…
 ```
 
 Server-side, all your previous keys are revoked atomically. The new key is bound to the same wallet.
@@ -207,7 +207,7 @@ Server-side, all your previous keys are revoked atomically. The new key is bound
 coronium status
 # Coronium status
 #
-#   base url        https://api.coronium.ai/v1
+#   base url        https://api.coronium.io/api/v3
 #   backend         ✓ ok (87ms)
 #   api key         ✓ configured
 #   auth            ✓ valid
@@ -216,7 +216,7 @@ coronium status
 
 coronium status --json
 # {
-#   "config": { "base_url": "...", "api_key": "sk_live_…(set)", ... },
+#   "config": { "base_url": "...", "api_key": "eyJhbGc…(set)", ... },
 #   "backend": { "health": "ok", "latency_ms": 87 },
 #   "auth": { "ok": true }
 # }
@@ -322,7 +322,7 @@ The CLI reads config in this priority order (highest first):
 | Variable | Purpose |
 |---|---|
 | `CORONIUM_API_KEY` | Bearer token. Overrides the one in `config.toml`. Useful for CI / containers. |
-| `CORONIUM_BASE_URL` | API base URL. Defaults to `https://api.coronium.ai/v1`. Override for local dev / staging. |
+| `CORONIUM_BASE_URL` | API base URL. Defaults to `https://api.coronium.io/api/v3`. Override for local dev / staging. |
 | `CORONIUM_VOUCHER` | Default voucher for `init`. Same as `--voucher`. |
 | `CORONIUM_WALLET_MNEMONIC` | For headless `init --restore` from a mnemonic. |
 | `CORONIUM_WALLET_PRIVATE_KEY` | For headless `init --restore` from a private key. |
@@ -408,7 +408,7 @@ The CLI is designed to run unattended in CI, container start-up scripts, server-
 export CORONIUM_VOUCHER="cor_v1_K7F3abcdef…"
 export CORONIUM_NON_INTERACTIVE=1
 coronium init --json --print-mnemonic
-# {"account_id":"acc_…","api_key":"sk_live_…","wallet_address":"0x…","mnemonic":"abandon …","balance_usd":0.5,…}
+# {"account_id":"acc_…","api_key":"eyJhbGc…","wallet_address":"0x…","mnemonic":"abandon …","balance_usd":0.5,…}
 ```
 
 `CORONIUM_NON_INTERACTIVE=1` is equivalent to passing `--no-prompt` on every command. The CLI will fail loudly with a clear error code (`VOUCHER_MISSING`, `MNEMONIC_MISSING`) instead of blocking on stdin.
@@ -528,7 +528,7 @@ The CLI checks the API's `Coronium-Api-Version` header on every call; you'll see
 - **Web**: <https://coronium.ai>
 - **Get a free voucher**: <https://coronium.ai/free>
 - **Public dashboard**: <https://dashboard.coronium.io>
-- **API spec (OpenAPI)**: <https://api.coronium.ai/openapi.yaml>
+- **API spec (OpenAPI)**: <https://dashboard.coronium.io/api-docs/>
 - **Source**: <https://github.com/bolivian-peru/coronium-ai/tree/main/packages/cli>
 - **Issues**: <https://github.com/bolivian-peru/coronium-ai/issues>
 - **Companion packages**:

@@ -25,7 +25,7 @@ Add this to your MCP config (`~/.claude.json`, `~/.cursor/mcp.json`, etc.):
       "command": "npx",
       "args": ["-y", "coronium-mcp"],
       "env": {
-        "CORONIUM_API_KEY": "sk_live_…"
+        "CORONIUM_API_KEY": "eyJhbGc…"
       }
     }
   }
@@ -36,7 +36,7 @@ Restart your MCP host. The agent auto-discovers the eight tools below — no fur
 
 ## Get an API key
 
-You need a Coronium API key (`sk_live_…`) before the MCP can do anything useful. Get one in 60 seconds:
+You need a Coronium API key (`eyJhbGc…`) before the MCP can do anything useful. Get one in 60 seconds:
 
 ```bash
 # 1. Get a free voucher
@@ -52,7 +52,7 @@ coronium init --voucher cor_v1_…
 cat ~/.coronium/config.toml | grep api_key
 ```
 
-Or hit `POST https://api.coronium.ai/v1/account/redeem-challenge` directly — the CLI just wraps that flow. See the [agent signup skill](https://github.com/bolivian-peru/coronium-ai/blob/main/skills/embed-signup/SKILL.md) for the wire format.
+Or hit `POST https://api.coronium.io/api/v3/account/redeem-challenge` directly — the CLI just wraps that flow. See the [agent signup skill](https://github.com/bolivian-peru/coronium-ai/blob/main/skills/embed-signup/SKILL.md) for the wire format.
 
 ## Tools exposed (8)
 
@@ -77,7 +77,7 @@ Tighten the per-session cap from your MCP env:
 
 ```jsonc
 "env": {
-  "CORONIUM_API_KEY": "sk_live_…",
+  "CORONIUM_API_KEY": "eyJhbGc…",
   "CORONIUM_COST_CAP_CENTS": "100"
 }
 ```
@@ -89,7 +89,7 @@ That caps every tool call at $1.00 — useful when an autonomous loop has access
 | Variable | Purpose |
 |---|---|
 | `CORONIUM_API_KEY` | Bearer token (required) |
-| `CORONIUM_BASE_URL` | API base URL. Defaults to `https://api.coronium.ai/v1`. Override for self-hosted / staging. |
+| `CORONIUM_BASE_URL` | API base URL. Defaults to `https://api.coronium.io/api/v3`. Override for self-hosted / staging. |
 | `CORONIUM_COST_CAP_CENTS` | Per-call spend cap in cents. Defaults to the account's session cap. |
 
 ## Error semantics
@@ -108,7 +108,7 @@ Agents should branch on `code`, not `message`.
 
 - Coronium homepage: <https://coronium.ai>
 - Get a free voucher: <https://coronium.ai/free>
-- API spec: <https://api.coronium.ai/openapi.yaml>
+- API spec: <https://dashboard.coronium.io/api-docs/>
 - Source: <https://github.com/bolivian-peru/coronium-ai/tree/main/packages/mcp>
 - Companion packages:
   - [`coronium-cli`](https://www.npmjs.com/package/coronium-cli) — same surface, from your shell

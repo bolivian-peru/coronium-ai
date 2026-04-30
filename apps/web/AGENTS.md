@@ -16,7 +16,7 @@ claude mcp add coronium npx -y coronium-mcp
 
 ## Setup checklist
 
-1. **Get an API key.** `POST https://api.coronium.ai/v1/account/create` with no
+1. **Get an API key.** `POST https://api.coronium.io/api/v3/account/create` with no
    body returns a `sk_live_…` key, a USDC-on-Base deposit address, and $0.50
    trial credit. There is no email verification step.
 2. **Store the key.** Put it in the env var `CORONIUM_API_KEY`. Never log it,

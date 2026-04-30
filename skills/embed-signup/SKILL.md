@@ -21,7 +21,7 @@ Use this skill when the user is:
 
 ```
 ┌─────────────────────────┐         ┌──────────────────────────────┐
-│  Browser (your site)    │         │  api.coronium.ai/v1          │
+│  Browser (your site)    │         │  api.coronium.io/api/v3          │
 │                         │         │                              │
 │  1. user pastes voucher │         │                              │
 │  2. choose wallet       │         │                              │
@@ -54,7 +54,7 @@ Every byte that's signed and verified comes from the user's keypair — your ser
    - The forthcoming `coronium.ai/free` self-service form
    - An affiliate / partner channel
 2. **A wallet** — either generated in the browser (recommended for new users) or connected via MetaMask / WalletConnect (better for users who already have an EVM wallet).
-3. **The Coronium API base URL**: `https://api.coronium.ai/v1` in production, or wherever the integrator points. Until `api.coronium.ai` is deployed, use a local mock or staging URL.
+3. **The Coronium API base URL**: `https://api.coronium.io/api/v3` in production, or wherever the integrator points. Until `api.coronium.ai` is deployed, use a local mock or staging URL.
 
 ## The three HTTP calls — exact wire format
 
@@ -99,7 +99,7 @@ A working standalone HTML file lives at `assets/demo.html` — open it in a brow
 ## Step-by-step guidance for an agent following this skill
 
 1. **Ask the integrator for their stack.** React / Vue / Svelte / vanilla / static HTML. Read the matching reference file (`references/react.md` or `references/vanilla-html.md`).
-2. **Confirm the API base URL.** Default `https://api.coronium.ai/v1`, but for local development the user might point at `http://127.0.0.1:5050/v1` (running `apps/api/`) or `http://127.0.0.1:5050/v1` against the mock. Make the base URL configurable.
+2. **Confirm the API base URL.** Default `https://api.coronium.io/api/v3`, but for local development the user might point at `http://127.0.0.1:5050/v1` (running `apps/api/`) or `http://127.0.0.1:5050/v1` against the mock. Make the base URL configurable.
 3. **Decide the wallet UX.** Two patterns:
    - **Generate a fresh wallet** — best for non-crypto users; shows a 24-word mnemonic ONCE; user must save it. Use `viem.generateMnemonic + mnemonicToAccount`.
    - **Use an existing wallet via MetaMask** — for users who already have one; faster, but requires `window.ethereum`. Use `personal_sign` for the SIWE message.

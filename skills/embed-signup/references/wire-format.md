@@ -24,7 +24,7 @@ Issues a one-shot SIWE message bound to (voucher, wallet, nonce). Server stores 
 
 ```json
 {
-  "siwe_message": "api.coronium.ai wants you to sign in with your Ethereum account:\n0x742d35Cc6634C0532925a3b844Bc9e7595f2BD12\n\nCreate a Coronium account by redeeming voucher cor_v1_K7F3abcdef….\n\nURI: https://api.coronium.ai/v1/account/redeem\nVersion: 1\nChain ID: 8453\nNonce: 9ab3de1f4c5b67890123456789abcdef\nIssued At: 2026-04-28T20:00:00.000Z\nExpiration Time: 2026-04-28T20:05:00.000Z\nResources:\n- urn:coronium:voucher:cor_v1_K7F3abcdef…",
+  "siwe_message": "api.coronium.ai wants you to sign in with your Ethereum account:\n0x742d35Cc6634C0532925a3b844Bc9e7595f2BD12\n\nCreate a Coronium account by redeeming voucher cor_v1_K7F3abcdef….\n\nURI: https://api.coronium.io/api/v3/account/redeem\nVersion: 1\nChain ID: 8453\nNonce: 9ab3de1f4c5b67890123456789abcdef\nIssued At: 2026-04-28T20:00:00.000Z\nExpiration Time: 2026-04-28T20:05:00.000Z\nResources:\n- urn:coronium:voucher:cor_v1_K7F3abcdef…",
   "nonce": "9ab3de1f4c5b67890123456789abcdef",
   "expires_at": "2026-04-28T20:05:00.000Z"
 }
@@ -85,7 +85,7 @@ Verifies the SIWE signature, atomically consumes the voucher + challenge, mints 
 | 400 | `INVALID_REQUEST` | Malformed signature (not 130 hex chars) or missing fields |
 | 400 | `SIWE_PARSE_ERROR` | The message is not a valid EIP-4361 string |
 | 400 | `SIWE_DOMAIN_MISMATCH` | Domain isn't `api.coronium.ai` (cross-app replay attempt) |
-| 400 | `SIWE_URI_MISMATCH` | URI isn't `https://api.coronium.ai/v1/account/redeem` |
+| 400 | `SIWE_URI_MISMATCH` | URI isn't `https://api.coronium.io/api/v3/account/redeem` |
 | 400 | `SIWE_CHAIN_MISMATCH` | Chain ID isn't 8453 (Base mainnet) |
 | 400 | `SIWE_INVALID_SIGNATURE` | Signature doesn't recover to the address in the message |
 | 400 | `VOUCHER_MISSING` | SIWE message has no `urn:coronium:voucher:…` resource line |
@@ -131,7 +131,7 @@ PK=$(cast wallet new --json | jq -r '.[0].private_key')
 ADDR=$(cast wallet address --private-key "$PK" | tr 'A-F' 'a-f')
 
 # 2. Get challenge
-CHALLENGE=$(curl -sS -X POST https://api.coronium.ai/v1/account/redeem-challenge \
+CHALLENGE=$(curl -sS -X POST https://api.coronium.io/api/v3/account/redeem-challenge \
   -H 'Content-Type: application/json' \
   -d "{\"voucher\":\"cor_v1_…\",\"wallet_address\":\"$ADDR\"}")
 
@@ -141,9 +141,9 @@ MSG=$(echo "$CHALLENGE" | jq -r .siwe_message)
 SIG=$(cast wallet sign --private-key "$PK" "$MSG")
 
 # 4. Redeem
-curl -sS -X POST https://api.coronium.ai/v1/account/redeem \
+curl -sS -X POST https://api.coronium.io/api/v3/account/redeem \
   -H 'Content-Type: application/json' \
   -d "$(jq -n --arg msg "$MSG" --arg sig "$SIG" '{siwe_message:$msg,signature:$sig}')"
 ```
 
-Replace `https://api.coronium.ai/v1` with `http://127.0.0.1:5050/v1` to test against a locally-running `apps/api/`.
+Replace `https://api.coronium.io/api/v3` with `http://127.0.0.1:5050/v1` to test against a locally-running `apps/api/`.

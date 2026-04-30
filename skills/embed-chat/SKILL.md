@@ -33,7 +33,7 @@ A chat surface that:
 
 ```
 ┌────────────────────────────────────────┐         ┌──────────────────────────────────┐
-│  Reseller frontend (your site)         │         │  api.coronium.ai/v1              │
+│  Reseller frontend (your site)         │         │  api.coronium.io/api/v3              │
 │                                        │         │                                  │
 │  <CoroniumChat                         │         │                                  │
 │     apiKey="sk_live_..."               │         │                                  │
@@ -103,7 +103,7 @@ Server-side spend cap (`session_cap_cents` on the account) is enforced before EV
 
 1. **Identify the integrator's stack and pick the pattern** — React (`references/react.md`), iframe (`references/iframe.md`), or vanilla (`references/vanilla-html.md`).
 2. **Confirm where the API key comes from** — usually from `embed-signup` (in the same session) or from a server-side mint. **Never have the user paste a key into the chat field**; that's a phishing pattern.
-3. **Set up the API base URL** — default `https://api.coronium.ai/v1`, override with prop or env for local dev.
+3. **Set up the API base URL** — default `https://api.coronium.io/api/v3`, override with prop or env for local dev.
 4. **Wire the streaming response** — Server-Sent Events. EventSource works in browsers; for fetch-based streaming see `references/wire-format.md`.
 5. **Render tool calls as activity badges** — show what the agent did, not just what it said. Reduces "did anything happen?" confusion.
 6. **Apply branding** — read `references/react.md` § "Theming" for the prop API. CSS variables for vanilla integrators.

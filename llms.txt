@@ -1,66 +1,79 @@
 # Coronium
 
-Mobile 4G/5G proxies in 20+ countries. Pay-per-hour USDC. Agent-native API.
+Mobile 4G/5G proxies via the agent-native API. Wallet-bound + voucher-gated
+signup, REST-only, no OAuth.
 
 ## How agents use this
 
 - **MCP server** (Claude / Cursor / Windsurf): `npx -y coronium-mcp` — env: `CORONIUM_API_KEY`
-- **REST API**: https://api.coronium.ai/v1/  (OpenAPI: https://api.coronium.ai/openapi.yaml)
+- **REST API**: <https://api.coronium.io/api/v3>
+- **OpenAPI (Swagger UI)**: <https://dashboard.coronium.io/api-docs/>
 - **TypeScript SDK**: `npm install coronium-sdk`
-- **Python SDK**: `pip install coronium-sdk`
-- **CLI** (humans): `npm install -g coronium-cli`
+- **CLI (humans)**: `npm install -g coronium-cli`
 
-## Quickstart (60 seconds, no human-in-the-loop)
+## Quickstart
 
-1. `POST /v1/account/create` → returns `sk_live_…` API key + USDC deposit address on Base + $0.50 trial credit
-2. (Optional) Send USDC to the deposit address to top up
-3. `POST /v1/proxies` with `{ "country": "US", "type": "5g" }` → returns proxy credentials (host, port_http, port_socks5, username, password)
-4. Use it as an HTTP/SOCKS5 proxy with any HTTP client
-5. `POST /v1/proxies/{id}/rotate` to get a fresh IP, or `DELETE /v1/proxies/{id}` to release
+1. **Get a voucher.** Open a GitHub issue at
+   <https://github.com/bolivian-peru/coronium-ai/issues> tagged `voucher-request`,
+   or wait for the public `/free` form.
+2. **Run `coronium init --voucher cor_v1_…`.** Generates an EVM wallet
+   locally, signs a SIWE message, and exchanges it for an API key with
+   whatever credit the voucher carries.
+3. **Use the API key.** Set `CORONIUM_API_KEY=<jwt>` in your env, then call
+   any of the 7 verbs below.
 
-## The 7 verbs (the entire API surface)
+The wallet stays on your machine. The API key (JWT) is your identity for
+every subsequent call. If you lose the key but keep the wallet, run
+`coronium key:rotate` to mint a fresh one.
+
+## The 7 verbs (the entire programmatic surface)
+
+All under `https://api.coronium.io/api/v3`. Auth via `?auth_token=<api_key>`
+query param OR `Authorization: Bearer <api_key>` header.
 
 | Verb | REST | MCP tool |
 |---|---|---|
-| Get balance | `GET /v1/balance` | `balance_get` |
-| Deposit address | `POST /v1/deposit/address` | `deposit_address` |
-| List tariffs | `GET /v1/tariffs` | `tariff_list` |
-| Buy proxy | `POST /v1/proxies` | `proxy_get` |
-| List active | `GET /v1/proxies` | `proxy_list` |
-| Rotate IP | `POST /v1/proxies/{id}/rotate` | `proxy_rotate` |
-| Replace broken proxy | `POST /v1/proxies/{id}/replace` | `proxy_replace` |
+| Get balance | `GET /account` | `balance_get` |
+| Deposit address | `GET /account/crypto-balance` | `deposit_address` |
+| List tariffs | `GET /tariffs/available` | `tariff_list` |
+| Buy proxy | `POST /payment/buy-modems-with-crypto-balance` | `proxy_get` |
+| List active | `GET /account/proxies` | `proxy_list` |
+| Rotate IP | `POST /modems/{id}/restart` | `proxy_rotate` |
+| Replace dead modem | `POST /modems/{id}/replace` | `proxy_replace` |
+| Release | `POST /modems/{id}/cancel` | `proxy_release` |
 
-## Constraints (server-enforced)
+## Wallet-bound signup (auto-handled by `coronium init`)
 
-- **Pricing**: $0.02/proxy/hour, prorated per second, 60-second minimum
-- **Daily spend cap**: $50/day per API key (default; raise via dashboard or `X-Cost-Cap-Cents` override)
-- **Per-session cap**: $5/agent run (override with `X-Cost-Cap-Cents` header)
-- **Daily tenant ceiling**: $500/day (hard)
-- **Stock-validated**: `POST /v1/proxies` returns `409 STOCK_OUT` (with suggestions) before charging if no matching proxy in stock
-- **Rotation verified**: `POST /v1/proxies/{id}/rotate` confirms the new IP against an external endpoint — never reports success on a no-op
+If you're integrating directly without the CLI:
+
+1. `POST /wallet-challenge` body `{wallet_address, voucher}` → `{message, nonce, expires_in_s}`
+2. Sign `message` with the wallet's private key
+3. `POST /wallet-signup` body `{wallet_address, voucher, message, signature}` → `{api_token, user_id, balance_usd}`
+
+## Pricing
+
+Tariffs are per-modem per-period (1d / 7d / 30d, country and carrier
+dependent). See `GET /tariffs/available` for live stock and prices. Balances
+are USD-denominated; USDC deposits convert 1:1 to account credit.
 
 ## Auth
 
-`Authorization: Bearer sk_live_…` on every request. The API key **is** the account — no email, no password, no email verification. Rotate via the dashboard if leaked.
-
-For pay-per-call USDC (no account, no balance): set `X-Payment-Mode: x402` and follow the EIP-3009 flow.
-
-## Error codes
-
-`code` field is stable. Read `code`, not `message`. Common: `STOCK_OUT`, `INSUFFICIENT_BALANCE`, `CARRIER_NO_OP`, `RATE_LIMITED`, `INVALID_KEY`, `SPEND_CAP_EXCEEDED`.
+`Authorization: Bearer <jwt>` or `?auth_token=<jwt>` on every request after
+signup. The JWT **is** the identity — no email, no password. If leaked, run
+`coronium key:rotate` to invalidate the old one and mint a new one (requires
+the wallet's private key to sign the rotation challenge).
 
 ## What this API is not
 
-- Not a residential / datacenter proxy reseller — these are real mobile carrier IPs (4G/5G).
-- Not a scraping framework — bring your own client.
-- Not for cancellation / billing-history calls — those go through the dashboard.
+- Not a residential / datacenter proxy reseller — these are real mobile
+  carrier IPs (4G/5G).
+- Not a scraping framework — bring your own HTTP client.
+- Not for cancellation / billing-history flows — those go through the
+  dashboard at <https://dashboard.coronium.io>.
 
 ## Links
 
-- Marketing: https://coronium.io
-- Dashboard (humans): https://dashboard.coronium.io
-- Agent docs: https://docs.coronium.ai
-- AGENTS.md: https://coronium.ai/AGENTS.md
-- OpenAPI spec: https://api.coronium.ai/openapi.yaml
-- Status: https://status.coronium.ai
-- Support: support@coronium.io
+- Source: <https://github.com/bolivian-peru/coronium-ai>
+- Marketing: <https://coronium.ai>
+- Customer dashboard: <https://dashboard.coronium.io>
+- Bug reports: <https://github.com/bolivian-peru/coronium-ai/issues>

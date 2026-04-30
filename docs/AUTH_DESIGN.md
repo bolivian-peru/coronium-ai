@@ -60,7 +60,7 @@ accounts                                          (extended)
 
 1.    coronium init --voucher cor_v1_K7F3...
        ├── load or generate wallet                  ┌──────────────────────┐
-       └── pubkey 0xABCDef…                         │  api.coronium.ai/v1  │
+       └── pubkey 0xABCDef…                         │  api.coronium.io/api/v3  │
                                                      └──────────────────────┘
 2.    POST /v1/account/redeem-challenge
         { voucher: "cor_v1_K7F3...",        ────►   look up voucher
@@ -99,7 +99,7 @@ api.coronium.ai wants you to sign in with your Ethereum account:
 
 Create a Coronium account by redeeming voucher cor_v1_K7F3....
 
-URI: https://api.coronium.ai/v1/account/redeem
+URI: https://api.coronium.io/api/v3/account/redeem
 Version: 1
 Chain ID: 8453
 Nonce: <32 hex>
@@ -118,7 +118,7 @@ This text is rendered as-is by MetaMask, Coinbase Wallet, Phantom (EVM mode), Ra
        ├── load wallet from ~/.coronium/wallet.json
        └── address known
                                                     ┌──────────────────────┐
-2.    POST /v1/account/key/rotate-challenge        │  api.coronium.ai/v1  │
+2.    POST /v1/account/key/rotate-challenge        │  api.coronium.io/api/v3  │
         { wallet_address }                ────►    look up account by wallet
                                                     mint nonce
                                             ◄────   { siwe_message, nonce, expires_at }

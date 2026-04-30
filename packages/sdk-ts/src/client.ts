@@ -11,7 +11,7 @@ import type {
   Tariff,
 } from "./types.js";
 
-const DEFAULT_BASE_URL = "https://api.coronium.ai/v1";
+const DEFAULT_BASE_URL = "https://api.coronium.io/api/v3";
 const DEFAULT_TIMEOUT_MS = 30_000;
 const DEFAULT_USER_AGENT = "coronium-sdk-ts/0.1.0";
 

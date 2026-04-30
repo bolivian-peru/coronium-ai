@@ -18,7 +18,7 @@ A polished version lives at [`../assets/demo.html`](../assets/demo.html). Minima
 </form>
 
 <script type="module">
-  const API = window.CORONIUM_API_BASE ?? "https://api.coronium.ai/v1";
+  const API = window.CORONIUM_API_BASE ?? "https://api.coronium.io/api/v3";
   const KEY = window.CORONIUM_API_KEY;        // ← set this in a parent script
   if (!KEY) throw new Error("Set window.CORONIUM_API_KEY before loading the chat");
 

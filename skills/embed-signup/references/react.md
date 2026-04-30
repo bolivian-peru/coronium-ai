@@ -34,7 +34,7 @@ export interface SignupResult {
 }
 
 export interface CoroniumSignupProps {
-  /** Defaults to https://api.coronium.ai/v1 */
+  /** Defaults to https://api.coronium.io/api/v3 */
   apiBase?: string;
   /** Pre-fill the voucher field. */
   voucher?: string;
@@ -49,7 +49,7 @@ export interface CoroniumSignupProps {
 type Step = "voucher" | "picker" | "signing" | "done" | "error";
 type WalletSource = "generate" | "metamask";
 
-const DEFAULT_API = "https://api.coronium.ai/v1";
+const DEFAULT_API = "https://api.coronium.io/api/v3";
 
 export function CoroniumSignup({
   apiBase = DEFAULT_API,

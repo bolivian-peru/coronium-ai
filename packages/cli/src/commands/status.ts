@@ -6,7 +6,7 @@ import { loadConfig, getApiKey, getBaseUrl } from "../config.js";
 import { loadWallet } from "../wallet.js";
 import { isJsonMode, printJson } from "../format.js";
 
-const DEFAULT_BASE = "https://api.coronium.ai/v1";
+const DEFAULT_BASE = "https://api.coronium.io/api/v3";
 
 export async function statusCommand(opts: { json?: boolean }): Promise<void> {
   const cfg = await loadConfig();
@@ -26,8 +26,8 @@ export async function statusCommand(opts: { json?: boolean }): Promise<void> {
     auth: { ok: false, code: "" as string | undefined },
   };
 
-  // Health check (unauth)
-  const healthUrl = baseUrl.replace(/\/v1$/, "") + "/health";
+  // Health check (unauth) — /tariffs/available is a public, fast probe.
+  const healthUrl = `${baseUrl}/tariffs/available`;
   const t0 = Date.now();
   try {
     const r = await fetch(healthUrl);
@@ -38,17 +38,17 @@ export async function statusCommand(opts: { json?: boolean }): Promise<void> {
     result.backend.latency_ms = Date.now() - t0;
   }
 
-  // Balance check (auth)
+  // Auth check — /account uses ?auth_token= (Coronium pattern), 200 means valid.
   if (apiKey && result.backend.health === "ok") {
     try {
-      const r = await fetch(`${baseUrl}/balance`, { headers: { Authorization: `Bearer ${apiKey}` } });
+      const r = await fetch(`${baseUrl}/account?auth_token=${encodeURIComponent(apiKey)}`);
       if (r.ok) {
         result.auth.ok = true;
       } else {
         const body = await r.json().catch(() => ({}));
         result.auth.code = (body as any).code ?? `HTTP_${r.status}`;
       }
-    } catch (e: any) {
+    } catch {
       result.auth.code = "NETWORK_ERROR";
     }
   }

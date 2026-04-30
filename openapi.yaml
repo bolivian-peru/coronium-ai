@@ -32,7 +32,7 @@ info:
     name: Proprietary
 
 servers:
-  - url: https://api.coronium.ai/v1
+  - url: https://api.coronium.io/api/v3
     description: Production
   - url: http://localhost:5000/api/v1
     description: Local development

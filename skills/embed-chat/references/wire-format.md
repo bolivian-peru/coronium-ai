@@ -121,7 +121,7 @@ These map 1:1 to the OpenAPI verbs. The chat agent receives results as JSON and 
 ## curl recipe (for debugging)
 
 ```bash
-curl -N -sS -X POST https://api.coronium.ai/v1/chat \
+curl -N -sS -X POST https://api.coronium.io/api/v3/chat \
   -H "Authorization: Bearer $CORONIUM_API_KEY" \
   -H "Content-Type: application/json" \
   -H "Accept: text/event-stream" \

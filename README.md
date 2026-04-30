@@ -6,9 +6,11 @@
 [![npm coronium-sdk](https://img.shields.io/npm/v/coronium-sdk.svg?label=coronium-sdk)](https://www.npmjs.com/package/coronium-sdk)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
-**Open-source agent-native interfaces for mobile (4G/5G) proxy infrastructure.** A CLI for humans, an MCP server for AI hosts, a typed SDK for code, a production API server, and a local mock for testing. One OpenAPI spec, seven verbs, three published packages.
+**Open-source agent-native interfaces for mobile (4G/5G) proxy infrastructure.** A CLI for humans, an MCP server for AI hosts, a typed SDK for code, plus a local mock for testing. One OpenAPI spec, seven verbs, three published packages.
 
-The reference backend is [Coronium](https://coronium.ai), but everything in this repo is provider-neutral: the OpenAPI contract is the integration boundary, and the API server in `apps/api/` is open-source. Anyone can host their own backend, embed the CLI in a customer dashboard, or join the affiliate program (see [Resellers & Integrators](#resellers--integrators) below).
+The reference backend is [Coronium](https://coronium.ai), served live at `https://api.coronium.io/api/v3` — the same API powering the legacy customer dashboard, with the new wallet-bound + voucher-gated signup routes added directly to it (no separate gateway). The OpenAPI contract is the integration boundary, so anyone can host an alternative backend behind the same shape. Affiliate program for resellers and integrators below.
+
+> **`apps/api/` was a separate Fastify gateway** that we ran as a BFF in front of `coronium-backend`. It's been collapsed: the wallet-signup routes (`/wallet-challenge` + `/wallet-signup` + `/wallet-key/rotate*`) now live directly on `api.coronium.io/api/v3`. The folder remains as a reference Fastify implementation and a local-dev mock — it is no longer the production backend.
 
 ---
 
@@ -53,18 +55,30 @@ coronium-ai/
 
 ## The 7 verbs
 
+All routes are on `https://api.coronium.io/api/v3`. The REST column shows the path under that base.
+
 | Verb | CLI | REST | MCP tool |
 |---|---|---|---|
-| balance | `coronium balance` | `GET /v1/balance` | `balance_get` |
-| deposit | `coronium deposit` | `POST /v1/deposit/address` | `deposit_address` |
-| tariffs | `coronium tariffs` | `GET /v1/tariffs` | `tariff_list` |
-| buy proxy | `coronium proxy get` | `POST /v1/proxies` | `proxy_get` |
-| list | `coronium proxy list` | `GET /v1/proxies` | `proxy_list` |
-| rotate | `coronium proxy rotate <id>` | `POST /v1/proxies/{id}/rotate` | `proxy_rotate` |
-| replace | `coronium proxy replace <id>` | `POST /v1/proxies/{id}/replace` | `proxy_replace` |
-| release | `coronium proxy release <id>` | `DELETE /v1/proxies/{id}` | `proxy_release` |
+| balance | `coronium balance` | `GET /account` | `balance_get` |
+| deposit | `coronium deposit` | `GET /account/crypto-balance` | `deposit_address` |
+| tariffs | `coronium tariffs` | `GET /tariffs/available` | `tariff_list` |
+| buy proxy | `coronium proxy get` | `POST /payment/buy-modems-with-crypto-balance` | `proxy_get` |
+| list | `coronium proxy list` | `GET /account/proxies` | `proxy_list` |
+| rotate | `coronium proxy rotate <id>` | `POST /modems/{id}/restart` | `proxy_rotate` |
+| replace | `coronium proxy replace <id>` | `POST /modems/{id}/replace` | `proxy_replace` |
+| release | `coronium proxy release <id>` | `POST /modems/{id}/cancel` | `proxy_release` |
 
-Same surface in all three. If a verb stops being needed it's deprecated in all three at once. If a verb is added, same.
+Same surface in all three. If a verb stops being needed it's deprecated in all three at once. If a verb is added, same. The full OpenAPI is at <https://dashboard.coronium.io/api-docs/>.
+
+### Wallet auth (the `coronium init` flow)
+
+Two extra public routes power the agent-native onboarding — they live on the same API:
+
+| Step | REST |
+|---|---|
+| 1. Get SIWE challenge | `POST /wallet-challenge {wallet_address, voucher}` |
+| 2. Submit signed signup | `POST /wallet-signup {wallet_address, voucher, message, signature}` |
+| 3. Rotate API key | `POST /wallet-key/rotate-challenge` then `POST /wallet-key/rotate` |
 
 ---
 
@@ -92,7 +106,7 @@ coronium balance
 
 Mock state is in-memory and resets on every restart — no persistence, no real charges, no real proxies.
 
-To test against a real backend, set `CORONIUM_BASE_URL` to that backend's URL. The reference public backend lives at `https://api.coronium.ai/v1`.
+To test against a real backend, set `CORONIUM_BASE_URL` to that backend's URL. The reference public backend lives at `https://api.coronium.io/api/v3`.
 
 ---
 
@@ -136,7 +150,7 @@ npm install -g coronium-cli
 coronium init
 ```
 
-`coronium init` defaults to `https://api.coronium.ai/v1`, where the user gets a fresh account with $0.50 trial credit and a USDC deposit address. No work for you. No revenue share — but no responsibility either.
+`coronium init` defaults to `https://api.coronium.io/api/v3`, where the user gets a fresh account with $0.50 trial credit and a USDC deposit address. No work for you. No revenue share — but no responsibility either.
 
 ### 1.5. Embed the signup form in your own site (browser-native, no CLI install)
 
@@ -154,20 +168,18 @@ Use this if you want users to sign up on YOUR site (no CLI install) but still ge
 
 You point users at the official backend **with attribution** so you get a revenue share on everything they spend:
 
-- **Server-side path** — your backend mints a signed referral token and includes it on `POST /v1/account/create`. Coronium attributes the user to you forever. You bill nothing; Coronium pays you a % of net revenue monthly in USDC.
 - **Wrapper-package path** — publish `@yourbrand/proxies` as a tiny wrapper around `coronium-cli` that injects your affiliate ID. Users `npm install -g @yourbrand/proxies`, run `yourbrand proxy get …`, and attribution is baked in.
+- **Server-side path** — your backend forwards signups to `https://api.coronium.io/api/v3/wallet-signup` and includes a referral identifier in the voucher metadata.
 
-The affiliate program is launching alongside this repo. Default rev share is **20% of net revenue, lifetime**, paid in USDC, $50 minimum payout, 60-day clawback on refunds. Sign up at <https://coronium.ai/partners> (live soon — until then, contact partners@coronium.io).
+A formal affiliate program (rev-share, USDC payouts, dashboard) is on the roadmap but not live yet. For wholesale or partnership inquiries, open a [GitHub issue](https://github.com/bolivian-peru/coronium-ai/issues) and tag it `partnership`.
 
 This is the right path if you have a customer base already (a SaaS, a community, a content channel) and want to add mobile-proxy capability without building the infra.
 
 ### 3. Run your own backend (full sovereignty)
 
-Self-host `apps/api/` against your own modem fleet (or another wholesale provider that exposes the 9 methods in `client.ts`). You own auth, billing, customer data, branding. You publish your own `@yourbrand/cli` and `@yourbrand/mcp` (or just rebrand and republish this repo's packages — Apache-2.0 license).
+The reference Fastify implementation in `apps/api/` (no longer used by Coronium itself) talks to a generic upstream over an HTTP client, so you can point it at any modem fleet that exposes the same handful of methods. License is Apache-2.0 — fork, rebrand, republish under your own npm scope, hook to your own DB. You own auth, billing, customer data.
 
 This is the right path if you have a fleet to monetize, want full margin, and can absorb the operational complexity.
-
-A wholesale partnership with Coronium is also available — you embed against `api.coronium.ai/v1` with a tenant token and resell at your own markup. Contact partners@coronium.io.
 
 ---
 
@@ -190,9 +202,8 @@ If you're forking under your own scope, do a search-and-replace from `coronium-c
 
 ## Links
 
-- **Reference backend** — <https://api.coronium.ai/v1> (OpenAPI: <https://api.coronium.ai/openapi.yaml>)
-- **Marketing** — <https://coronium.ai>
+- **Production API** — <https://api.coronium.io/api/v3>
+- **OpenAPI spec** — <https://dashboard.coronium.io/api-docs/> (Swagger UI, basic-auth gated)
+- **Marketing site** — <https://coronium.ai>
 - **Customer dashboard** — <https://dashboard.coronium.io>
-- **Agent discovery** — <https://coronium.ai/llms.txt>, <https://coronium.ai/AGENTS.md>
-- **Affiliate / reseller** — partners@coronium.io
 - **Bug reports / feature requests** — [GitHub issues](https://github.com/bolivian-peru/coronium-ai/issues)

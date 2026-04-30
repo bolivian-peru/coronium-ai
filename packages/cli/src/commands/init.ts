@@ -155,6 +155,8 @@ export async function initCommand(opts: InitOptions): Promise<void> {
   const result = await api.redeem({
     siwe_message: challenge.siwe_message,
     signature,
+    wallet_address: stored.address,
+    voucher,
   });
 
   await saveConfig({
@@ -265,11 +267,15 @@ async function restoreAccount(headless: boolean, json: boolean): Promise<void> {
   }
 
   const account = accountFromStored(stored);
-  const challenge = await api.rotateChallenge({ wallet_address: stored.address });
-  const signature = await account.signMessage({ message: challenge.siwe_message });
-  const result = await api.rotate({ siwe_message: challenge.siwe_message, signature });
-
   const existing = await loadConfig();
+  const existingKey = (existing as any).api_key;
+  if (!existingKey) {
+    die(json, "RESTORE_NEEDS_KEY", "init --restore requires an existing API key (the wallet alone can't mint a fresh one). Set CORONIUM_API_KEY env var or run `coronium init --voucher <code>` if this is a new account.");
+  }
+  const challenge = await api.rotateChallenge({ wallet_address: stored.address, api_key: existingKey });
+  const signature = await account.signMessage({ message: challenge.siwe_message });
+  const result = await api.rotate({ siwe_message: challenge.siwe_message, signature, wallet_address: stored.address, api_key: existingKey });
+
   await saveConfig({ ...existing, api_key: result.api_key });
 
   if (json) {

@@ -52,7 +52,7 @@ A polished version lives at [`../assets/demo.html`](../assets/demo.html). Minima
     } from "https://esm.sh/viem@2/accounts";
     import { getAddress } from "https://esm.sh/viem@2";
 
-    const API = window.CORONIUM_API_BASE ?? "https://api.coronium.ai/v1";
+    const API = window.CORONIUM_API_BASE ?? "https://api.coronium.io/api/v3";
 
     const $ = (id) => document.getElementById(id);
     const show = (name) => {

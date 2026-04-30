@@ -19,7 +19,7 @@ Branch on the `code` field, never the `message`. The `message` may change in fut
 | `INVALID_REQUEST` | Signature isn't 0x + 130 hex chars | Buggy signing path or `eth_sign` instead of `personal_sign` | Use `personal_sign` (EIP-191), not `eth_sign` (EIP-712 / typed-data). With viem, that's `account.signMessage({ message })`. |
 | `SIWE_PARSE_ERROR` | Message can't be parsed as EIP-4361 | Client edited the message before signing — added/stripped whitespace, normalized the address case, etc. | **Sign the message verbatim.** Treat it as opaque bytes. Don't reformat. |
 | `SIWE_DOMAIN_MISMATCH` | Domain in message ≠ `api.coronium.ai` | Client constructed its own SIWE message instead of using the one from `redeem-challenge` | Don't construct messages yourself — always use the challenge's `siwe_message`. |
-| `SIWE_URI_MISMATCH` | URI ≠ `https://api.coronium.ai/v1/account/redeem` | Same as above | Same as above |
+| `SIWE_URI_MISMATCH` | URI ≠ `https://api.coronium.io/api/v3/account/redeem` | Same as above | Same as above |
 | `SIWE_CHAIN_MISMATCH` | Chain ID in message ≠ 8453 (Base) | Same as above | Same as above |
 | `SIWE_INVALID_SIGNATURE` | Signature doesn't recover to the wallet address in the message | Wallet that signed isn't the one the challenge was issued to (e.g., user switched wallets in MetaMask between challenge and signature) | Re-issue a challenge for the now-active wallet. |
 | `VOUCHER_MISSING` | SIWE message has no voucher resource line | Crafted message didn't include the `urn:coronium:voucher:…` Resources entry | Use the verbatim challenge — don't reconstruct. |
