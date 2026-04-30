@@ -8,6 +8,18 @@
 
 **Open-source agent-native interfaces for mobile (4G/5G) proxy infrastructure.** A CLI for humans, an MCP server for AI hosts, a typed SDK for code, plus a local mock for testing. One OpenAPI spec, seven verbs, three published packages.
 
+## Which Coronium MCP do I want?
+
+Two MCP servers exist and both hit the same backend (`https://api.coronium.io/api/v3`). Pick by your starting state:
+
+| You are… | Use | Why |
+|---|---|---|
+| **An AI agent** or **a new user** who wants one-command signup, no email | **`coronium-cli` + `coronium-mcp`** (this repo) | Voucher-gated, wallet-bound (SIWE) signup. 7 minimal verbs. `npx -y coronium-cli init --voucher cor_v1_…` and you have a working JWT |
+| **A Coronium customer** with an existing dashboard.coronium.io email/password | [`coronium-proxy-mcp`](https://github.com/coroniumio/coronium-proxy-mcp) | 34 tools across the full lifecycle: tickets, low-balance alerts, OS fingerprinting, modem metadata, account settings, plus the 7 core verbs |
+
+The two MCPs are intentional siblings, not duplicates — different auth model, different tool depth. Once signed in, both produce JWTs against the same API, so you can switch later if needs change.
+
+
 The reference backend is [Coronium](https://coronium.ai), served live at `https://api.coronium.io/api/v3` — the same API powering the legacy customer dashboard, with the new wallet-bound + voucher-gated signup routes added directly to it (no separate gateway). The OpenAPI contract is the integration boundary, so anyone can host an alternative backend behind the same shape. Affiliate program for resellers and integrators below.
 
 > **`apps/api/` was a separate Fastify gateway** that we ran as a BFF in front of `coronium-backend`. It's been collapsed: the wallet-signup routes (`/wallet-challenge` + `/wallet-signup` + `/wallet-key/rotate*`) now live directly on `api.coronium.io/api/v3`. The folder remains as a reference Fastify implementation and a local-dev mock — it is no longer the production backend.
