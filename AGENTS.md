@@ -52,14 +52,44 @@ Same surface in the CLI (`coronium proxy …`) and in MCP tools (`proxy_get`,
 1. **Stock-out is normal.** A failed `proxies.buy` often means no inventory in
    the requested country. Try a different country or carrier rather than
    looping the same call.
-2. **Rotate is verified.** A `200` from `proxies.rotate` means the IP actually
-   changed. The backend now auto-clears stuck "pending" rotations within 5
-   minutes — but if you see a clear failure, try `replace` rather than looping.
+2. **A rotate `200` means "accepted," not "done."** Confirm the egress IP
+   actually changed before relying on it (route real traffic, or re-list the
+   proxy and compare the IP) — a carrier sticky window (~290s on many farms)
+   can make a rotate a no-op even when accepted. The backend auto-clears stuck
+   "pending" rotations within 5 minutes; on a clear failure, `replace` rather
+   than looping `rotate`.
 3. **Release what you buy.** Idle proxies cost money. When you're done, call
    `proxies.release(id)`.
 4. **Read errors fully.** The backend returns `{ error: "…" }` on most
    failures with a clear human-readable message. Surface it to the user
    rather than retrying blindly.
+
+## Mental model & operating principles
+
+A Coronium proxy is a *real SIM in a real device* on a carrier CGNAT pool —
+finite, stateful, physical, shared with real humans. That physics, plus a
+[code-simplifier](https://github.com/anthropics/claude-plugins-official/blob/main/plugins/code-simplifier/agents/code-simplifier.md)
+disposition, is the whole operating manual:
+
+- **Smallest sufficient action** — don't rotate when sticky works; `rotate`
+  before `replace` before buy-new. Escalate only when the cheaper rung fails.
+- **Read reality before acting** — `tariffs.list` / `proxies.list` are ground
+  truth; query, don't assume.
+- **Verify effects** — see rule 2 above; a `200` is "accepted," not "done."
+- **No speculative loops** — irreversible/paid actions deserve confirmation.
+
+The canonical, fuller treatment (mental model, decision rules, recipes, error
+shapes) is the customer-side skill — same physics, same discipline:
+<https://dashboard.coronium.io/SKILL.md>.
+
+**Source of truth** (docs drift; the system does not): MCP `tools/list` →
+OpenAPI at `/api-docs/` → live `/tariffs/available` + `/account/proxies` →
+this file. When they disagree, the system wins.
+
+**Make it yours.** The 7 verbs are deliberately minimal so you can compose
+your own higher-level routines on top. The recipes and the verb set are a
+floor, not a ceiling — only the safety/cost rules and the network's physics
+(rate limits, finite stock, sticky windows) are fixed. Build what fits your task.
 
 ## Auth model — what's actually under the hood
 

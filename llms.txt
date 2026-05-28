@@ -1,7 +1,17 @@
 # Coronium
 
 Mobile 4G/5G proxies via the agent-native API. Wallet-bound + voucher-gated
-signup, REST-only, no OAuth.
+signup, REST-only, no OAuth. A proxy here is a *real SIM in a real device* on a
+carrier CGNAT pool — finite, stateful, physical; you egress as human-grade
+traffic, not "server."
+
+Full mental model + operating principles + recipes (customer-side skill, same
+physics + same code-simplifier discipline): <https://dashboard.coronium.io/SKILL.md>
+
+Source of truth (docs drift; the system does not): MCP `tools/list` → OpenAPI
+at `/api-docs/` → live `/tariffs/available` + `/account/proxies` → this file.
+When they disagree, the system wins. The 7 verbs below are a floor, not a
+ceiling — compose your own routines; only safety/cost + network physics are fixed.
 
 ## How agents use this
 
