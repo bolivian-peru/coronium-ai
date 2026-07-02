@@ -10,7 +10,7 @@
 ### Claude Code
 
 ```bash
-claude mcp add coronium npx -y coronium-mcp
+claude mcp add coronium -- npx -y coronium-mcp
 # Then export CORONIUM_API_KEY in the same shell, or add it to the MCP env.
 ```
 

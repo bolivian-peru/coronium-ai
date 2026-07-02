@@ -1,6 +1,6 @@
 {
   "name": "coronium-mcp",
-  "version": "0.2.0-beta.1",
+  "version": "0.2.0",
   "description": "Coronium MCP server — buy and manage mobile (4G/5G) proxies from Claude, Cursor, Windsurf, or any MCP host.",
   "license": "Apache-2.0",
   "keywords": [

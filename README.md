@@ -32,7 +32,7 @@ coronium init --voucher cor_v1_K7F3...     # voucher-gated, wallet-bound
 coronium proxy get --country US --type 5g
 
 # AI agent (Claude Code / Claude Desktop / Cursor / Windsurf)
-claude mcp add coronium npx -y coronium-mcp
+claude mcp add coronium -- npx -y coronium-mcp
 # Then set CORONIUM_API_KEY in the MCP env.
 ```
 

@@ -38,7 +38,7 @@ coronium proxy get --country US --type 5g
 ```bash
 npm install -g coronium-cli
 coronium --version
-# 0.1.0-alpha.3
+# 0.2.0
 ```
 
 Requires Node.js 20 or newer. Works on macOS, Linux, and Windows.
@@ -506,11 +506,11 @@ Move these between machines to take your account with you. The wallet file is th
 ## Updating, uninstalling
 
 ```bash
-# Update to the latest stable
+# Update to the latest stable (currently 0.2.0)
 npm install -g coronium-cli@latest
 
-# Update to the bleeding-edge alpha
-npm install -g coronium-cli@alpha
+# Note: the `alpha` / `beta` dist-tags are OLDER pre-release builds
+# (0.1.0-alpha.4 / 0.2.0-beta.1) — `@latest` is the current release.
 
 # Uninstall (your wallet and config remain in ~/.coronium/)
 npm uninstall -g coronium-cli

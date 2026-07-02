@@ -2,7 +2,17 @@
 
 All notable changes to the `coronium-ai` packages.
 
-The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Pre-1.0 we publish under the `alpha` npm tag and may break minor versions.
+The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Pre-1.0, minor versions may break. Stable releases are on the `latest` npm tag (currently `0.2.0`); pre-release builds may appear on the `beta` / `alpha` tags.
+
+## [0.2.0] — 2026-07-02
+
+### Promoted beta → stable
+
+`0.2.0-beta.1` (2026-04-30) has soaked in production and is promoted to stable. `coronium-cli`, `coronium-mcp`, and `coronium-sdk` are all published at **`0.2.0` on the `latest` npm tag** — `npm install -g coronium-cli` / `npx -y coronium-mcp` (no `@beta` / `@alpha`) now resolves to the wallet-bound, single-backend release.
+
+- No API changes since `0.2.0-beta.1`: same single backend (`https://api.coronium.io/api/v3`), same wallet-bound voucher signup (`/wallet-challenge` + `/wallet-signup`), same 7 verbs.
+- `latest` moves off the old `0.1.0-alpha.4` (pre-agent-native, `api.coronium.ai/v1`).
+- The `alpha` and `beta` dist-tags now sit BEHIND `latest`; install without a tag to get the current release.
 
 ## [0.2.0-beta.1] — 2026-04-30
 

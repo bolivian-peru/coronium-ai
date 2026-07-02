@@ -11,7 +11,7 @@ TypeScript SDK, the CLI, or raw REST.
 
 ```bash
 # Best path for AI hosts (Claude Code, Claude Desktop, Cursor, Windsurf):
-claude mcp add coronium npx -y coronium-mcp
+claude mcp add coronium -- npx -y coronium-mcp
 # Then set CORONIUM_API_KEY in the MCP env (after running `coronium init`).
 ```
 

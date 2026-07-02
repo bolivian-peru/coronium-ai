@@ -1,6 +1,6 @@
 {
   "name": "coronium-cli",
-  "version": "0.2.0-beta.1",
+  "version": "0.2.0",
   "description": "Coronium CLI — buy and manage mobile (4G/5G) proxies from your shell.",
   "license": "Apache-2.0",
   "keywords": [
