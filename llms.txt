@@ -1,89 +1,32 @@
 # Coronium
 
-Mobile 4G/5G proxies via the agent-native API. Wallet-bound + voucher-gated
-signup, REST-only, no OAuth. A proxy here is a *real SIM in a real device* on a
-carrier CGNAT pool — finite, stateful, physical; you egress as human-grade
-traffic, not "server."
+Dedicated 4G/5G mobile proxies on real carrier SIMs, managed through the REST API at https://api.coronium.io/api/v3 (Bearer token from dashboard.coronium.io, Account, API Access).
 
-Full mental model + operating principles + recipes (customer-side skill, same
-physics + same code-simplifier discipline): <https://dashboard.coronium.io/SKILL.md>
+## Interfaces
 
-Source of truth (docs drift; the system does not): MCP `tools/list` → OpenAPI
-at `/api-docs/` → live `/tariffs/available` + `/account/proxies` → this file.
-When they disagree, the system wins. The 7 verbs below are a floor, not a
-ceiling — compose your own routines; only safety/cost + network physics are fixed.
+- MCP server: `npx -y coronium-proxy-mcp` (env CORONIUM_API_TOKEN). `coronium-mcp` is deprecated.
+- TypeScript SDK: `npm install coronium-sdk` (https://github.com/bolivian-peru/coronium-ai/tree/main/packages/sdk-ts)
+- CLI: `npm install -g coronium-cli` (https://github.com/bolivian-peru/coronium-ai/tree/main/packages/cli)
 
-## How agents use this
+## Core routes (all under /api/v3)
 
-- **MCP server** (Claude / Cursor / Windsurf): `npx -y coronium-mcp` — env: `CORONIUM_API_KEY`
-- **REST API**: <https://api.coronium.io/api/v3>
-- **OpenAPI (Swagger UI)**: <https://dashboard.coronium.io/api-docs/>
-- **TypeScript SDK**: `npm install coronium-sdk`
-- **CLI (humans)**: `npm install -g coronium-cli`
+- GET /countries, GET /tariffs/available, GET /free-modems: public catalog and stock.
+- GET /account: account credit and BTC/USDT balances.
+- GET /account/proxies: owned proxies with credentials.
+- POST /modems/:id/restart: rotate the IP. 200 with rotated:true is done, 202 with pending:true is still running (poll GET /modems/:id/rotation-status), 200 with rotated:false means the IP did not change.
+- POST /modems/:id/replace: swap for another modem (new host and credentials, 2 per 24 hours).
+- POST /modems/:id/test: connectivity check; failures can arrive as 2xx bodies with an error string.
+- POST /payment/renewal-quote: price a renewal (read-only).
+- POST /payment/buy-with-account-credit, POST /payment/renew-with-account-credit: charge account credit. Send an Idempotency-Key.
+- GET, PUT, DELETE /account/webhook; POST /account/webhook/secret/rotate; POST /account/webhook/test.
+- GET, POST /tickets; GET /tickets/:id; POST /tickets/:id/reply.
 
-## Quickstart
+## Behaviour to know
 
-1. **Get a voucher.** Open a GitHub issue at
-   <https://github.com/bolivian-peru/coronium-ai/issues> tagged `voucher-request`,
-   or wait for the public `/free` form.
-2. **Run `coronium init --voucher cor_v1_…`.** Generates an EVM wallet
-   locally, signs a SIWE message, and exchanges it for an API key with
-   whatever credit the voucher carries.
-3. **Use the API key.** Set `CORONIUM_API_KEY=<jwt>` in your env, then call
-   any of the 7 verbs below.
+- An authenticated request to a path that does not exist is answered with a redirect to an HTML page. Do not follow redirects; treat a 3xx as "route not found".
+- Errors are JSON: {error, code, suggested_action, request_id}. Detect rate limits by HTTP 429 and Retry-After, not by code.
+- Never retry a payment or a write automatically after a 5xx or timeout; check state first.
 
-The wallet stays on your machine. The API key (JWT) is your identity for
-every subsequent call. If you lose the key but keep the wallet, run
-`coronium key:rotate` to mint a fresh one.
+## Support
 
-## The 7 verbs (the entire programmatic surface)
-
-All under `https://api.coronium.io/api/v3`. Auth via `?auth_token=<api_key>`
-query param OR `Authorization: Bearer <api_key>` header.
-
-| Verb | REST | MCP tool |
-|---|---|---|
-| Get balance | `GET /account` | `balance_get` |
-| Deposit address | `GET /account/crypto-balance` | `deposit_address` |
-| List tariffs | `GET /tariffs/available` | `tariff_list` |
-| Buy proxy | `POST /payment/buy-modems-with-crypto-balance` | `proxy_get` |
-| List active | `GET /account/proxies` | `proxy_list` |
-| Rotate IP | `POST /modems/{id}/restart` | `proxy_rotate` |
-| Replace dead modem | `POST /modems/{id}/replace` | `proxy_replace` |
-| Release | `POST /modems/{id}/cancel` | `proxy_release` |
-
-## Wallet-bound signup (auto-handled by `coronium init`)
-
-If you're integrating directly without the CLI:
-
-1. `POST /wallet-challenge` body `{wallet_address, voucher}` → `{message, nonce, expires_in_s}`
-2. Sign `message` with the wallet's private key
-3. `POST /wallet-signup` body `{wallet_address, voucher, message, signature}` → `{api_token, user_id, balance_usd}`
-
-## Pricing
-
-Tariffs are per-modem per-period (1d / 7d / 30d, country and carrier
-dependent). See `GET /tariffs/available` for live stock and prices. Balances
-are USD-denominated; USDC deposits convert 1:1 to account credit.
-
-## Auth
-
-`Authorization: Bearer <jwt>` or `?auth_token=<jwt>` on every request after
-signup. The JWT **is** the identity — no email, no password. If leaked, run
-`coronium key:rotate` to invalidate the old one and mint a new one (requires
-the wallet's private key to sign the rotation challenge).
-
-## What this API is not
-
-- Not a residential / datacenter proxy reseller — these are real mobile
-  carrier IPs (4G/5G).
-- Not a scraping framework — bring your own HTTP client.
-- Not for cancellation / billing-history flows — those go through the
-  dashboard at <https://dashboard.coronium.io>.
-
-## Links
-
-- Source: <https://github.com/bolivian-peru/coronium-ai>
-- Marketing: <https://coronium.ai>
-- Customer dashboard: <https://dashboard.coronium.io>
-- Bug reports: <https://github.com/bolivian-peru/coronium-ai/issues>
+hello@coronium.io

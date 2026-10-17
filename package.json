@@ -2,7 +2,7 @@
   "name": "coronium-ai",
   "version": "0.1.0",
   "private": true,
-  "description": "Coronium agent-native interfaces — CLI, MCP server, TypeScript SDK.",
+  "description": "Coronium mobile proxy SDK and CLI for the /api/v3 API.",
   "license": "Apache-2.0",
   "engines": {
     "node": ">=20"
@@ -15,8 +15,7 @@
     "test:watch": "vitest",
     "dev:api": "pnpm -F coronium-mock-api dev",
     "doctor": "node scripts/doctor.mjs",
-    "publish:dry": "pnpm doctor && pnpm -r --filter './packages/**' publish --dry-run --access public --no-git-checks",
-    "publish:alpha": "pnpm doctor && pnpm -r --filter './packages/**' publish --tag alpha --access public"
+    "publish:dry": "pnpm run doctor && pnpm -r --filter './packages/**' publish --dry-run --access public --no-git-checks"
   },
   "devDependencies": {
     "typescript": "5.7.2",

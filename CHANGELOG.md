@@ -2,7 +2,38 @@
 
 All notable changes to the `coronium-ai` packages.
 
-The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Pre-1.0, minor versions may break. Stable releases are on the `latest` npm tag (currently `0.2.0`); pre-release builds may appear on the `beta` / `alpha` tags.
+The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Pre-1.0, minor versions may break. Stable releases are on the `latest` npm tag; pre-release builds may appear on the `beta` / `alpha` tags.
+
+## [1.0.0] - 2026-10-17
+
+### coronium-sdk 1.0.0 and coronium-cli 1.0.0: rewritten against the real API
+
+0.x was written against an API design that was never shipped. Against `https://api.coronium.io/api/v3`, 8 of the 9 SDK methods called routes that do not exist, the API answered with a redirect to an HTML page, and the SDK returned that page as data. The CLI printed fake proxies and false "rotated" messages with exit code 0. 1.0 replaces both packages; there is no compatible upgrade from 0.x because 0.x did not work.
+
+SDK:
+- One typed client, `new Coronium({ token })`, with `account`, `catalog`, `proxies`, `tickets`, `webhook`, `wallet` and `spending`. Every method maps to a real `/api/v3` route; types are written by hand from the verified contract.
+- Strict transport: redirects are never followed (a 3xx is `route_not_found`), HTML or empty 2xx bodies are `invalid_response`, nothing is retried, the token goes only in the Authorization header.
+- `CoroniumError` carries `status`, the API's `code`, `requestId`, `retryAfterSeconds` and an `outcome` of `rejected`, `unknown` or `refunded_not_charged`. Rate limits are detected by HTTP 429.
+- Rotation returns `done`, `rotating` (asynchronous providers, poll instead of resubmitting) or `unchanged`. The public token route's success shape is recognised.
+- Ticket responses drop staff-only fields. Connection URLs use separate HTTP and SOCKS5 credentials when a proxy has them.
+- Spending (`spending.buy`, `spending.renew`, account credit or BTC) is off unless `allowSpending: true`, needs `expectedTotalUsd`, re-checks a fresh quote before sending, and sends an `Idempotency-Key`.
+- No runtime dependencies. Wallet signing stays out of the SDK.
+
+CLI:
+- Built on the SDK. Auth with `CORONIUM_API_TOKEN` or `coronium login --token`.
+- New commands: `countries`, `tariffs`, `stock`, `quote buy`, `quote renew`, `proxy list/show/rotate/rotation-status/replace/openvpn/test/whitelist`, `buy`, `renew`, `payment`, `spending on/off/status`, `tickets ...`, `webhook ...`.
+- `buy` and `renew` show the price and refuse unless spending is on and both `--max-total` and `--yes` are given.
+- Exit codes: 0 ok, 1 rejected, 2 usage, 3 outcome unknown, 4 refunded.
+- Kept: `init --voucher`, `init --restore`, `key:rotate`, `wallet:encrypt`, `wallet:decrypt`. The token is now sent as a Bearer header, never in the URL, and the misleading "USDC deposit to your own wallet" line is gone.
+- Removed: `proxy get` (now `buy`, prints a hint), `proxy release`, `deposit` (now `balance --crypto`).
+
+Tests:
+- `test/fixtures/v3-routes.json` lists the public `/api/v3` routes; a test proves every SDK call exists there.
+- A loopback fixture server reproduces production's behaviour, including the redirect-to-HTML for unknown routes. The CLI suite runs the built binary against it with an isolated HOME.
+
+### coronium-mcp: deprecated
+
+Use [`coronium-proxy-mcp`](https://github.com/coroniumio/coronium-proxy-mcp). The `coronium-mcp` source was removed from this repository. The root `openapi.yaml` (the never-shipped 0.x contract) was removed too.
 
 ## [0.2.0] — 2026-07-02
 
@@ -102,11 +133,11 @@ Every account is now anchored to an EVM keypair. Signup is voucher-gated and pro
   - **Auth**: bearer `sk_live_…` keys, scrypt-hashed at rest, 12-char prefix index for fast lookup, constant-time verification.
   - **State**: SQLite with WAL — accounts, api_keys, spend_ledger, audit_log. Schema in `src/db/schema.sql`, idempotently applied on boot.
   - **Spend caps**: per-call (X-Cost-Cap-Cents header), per-session (account default), per-day (account), per-day (tenant ceiling). All enforced before the upstream call.
-  - **Upstream integration**: HTTP client to cor-api-v1's existing agent endpoint via `UPSTREAM_API_TOKEN`. Timeouts, error mapping (STOCK_OUT / CARRIER_NO_OP passed through with stable `code` field).
+  - **Upstream integration**: HTTP client to the Coronium backend's agent endpoint via `UPSTREAM_API_TOKEN`. Timeouts, error mapping (STOCK_OUT / CARRIER_NO_OP passed through with stable `code` field).
   - **Hardening**: helmet, CORS allowlist, rate-limit per-key (120/min) + per-IP (60/min), trustProxy, body limit 64 kB, audit log of every request.
   - **Health**: `GET /health` (liveness) + `GET /ready` (db + upstream) for nginx / k8s / systemd.
   - **Graceful shutdown**: SIGINT / SIGTERM closes Fastify and the DB; uncaughtException / unhandledRejection are fatal.
-  - **Tests**: 11 e2e tests against an in-process mock of cor-api-v1. Full hero path covered (auth → tariffs → buy → rotate → release).
+  - **Tests**: 11 e2e tests against an in-process mock of the Coronium backend. Full hero path covered (auth → tariffs → buy → rotate → release).
   - **Deploy**: multi-stage Dockerfile, PM2 ecosystem.config.cjs, hardened systemd unit, nginx config example, three deploy paths in `apps/api/README.md`.
 - `apps/mock-api/` — renamed from `apps/api/`. Local-dev mock; never published.
 

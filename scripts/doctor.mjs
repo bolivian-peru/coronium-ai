@@ -1,79 +1,106 @@
 #!/usr/bin/env node
-// Pre-publish sanity checks. Run via `pnpm doctor` (also runs as part of
-// `pnpm publish:dry` and `pnpm publish:alpha`).
+// Pre-publish checks for coronium-sdk and coronium-cli. Run with `pnpm doctor`
+// (also part of `pnpm publish:dry`).
 //
-// Catches the things npm itself won't: missing dist, leftover .tgz, secret-
-// looking strings, references to wrong github org, etc.
+// Catches what npm itself will not: missing dist, version drift between
+// package.json and the version constants, leftover tarballs, secret-shaped
+// strings, and internal identifiers that must never appear in a public repo.
 
-import { readFileSync, readdirSync, existsSync, statSync } from "node:fs";
-import { join, dirname } from "node:path";
+import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
+import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-const ROOT = dirname(fileURLToPath(import.meta.url)) + "/..";
-const PACKAGES = ["sdk-ts", "cli", "mcp"];
+const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
+
+const PACKAGES = [
+  { dir: "sdk-ts", name: "coronium-sdk", versionFile: "src/version.ts", versionConst: "SDK_VERSION" },
+  { dir: "cli", name: "coronium-cli", versionFile: "src/version.ts", versionConst: "CLI_VERSION" },
+];
 
 const errors = [];
-const warnings = [];
 
-function fail(msg) { errors.push(msg); }
-function warn(msg) { warnings.push(msg); }
-
-// 1. Each package has a dist/, README, LICENSE, package.json.
-for (const p of PACKAGES) {
-  const dir = join(ROOT, "packages", p);
-  if (!existsSync(join(dir, "dist"))) fail(`${p}: missing dist/ — run \`pnpm build\``);
-  if (!existsSync(join(dir, "README.md"))) fail(`${p}: missing README.md`);
-  if (!existsSync(join(dir, "LICENSE"))) fail(`${p}: missing LICENSE`);
-  if (!existsSync(join(dir, "package.json"))) { fail(`${p}: missing package.json`); continue; }
-
-  const pkg = JSON.parse(readFileSync(join(dir, "package.json"), "utf8"));
-  if (!pkg.name?.startsWith("@coronium/")) fail(`${p}: package name "${pkg.name}" must start with @coronium/`);
-  if (!pkg.version) fail(`${p}: missing version`);
-  if (pkg.private) fail(`${p}: private:true blocks publishing`);
-  if (pkg.publishConfig?.access !== "public") fail(`${p}: publishConfig.access must be "public"`);
-  if (!pkg.license) warn(`${p}: missing license field`);
+function fail(message) {
+  errors.push(message);
 }
 
-// 2. No leftover .tgz tarballs (npm pack debris).
-function findTarballs(dir) {
-  const out = [];
-  for (const name of readdirSync(dir)) {
-    if (name === "node_modules" || name === "dist" || name.startsWith(".")) continue;
-    const full = join(dir, name);
-    const st = statSync(full);
-    if (st.isDirectory()) out.push(...findTarballs(full));
-    else if (name.endsWith(".tgz")) out.push(full);
+function readJson(path) {
+  return JSON.parse(readFileSync(path, "utf8"));
+}
+
+function versionConstant(path, name) {
+  const match = readFileSync(path, "utf8").match(new RegExp(`${name}: string = "([^"]+)"`));
+  return match ? match[1] : null;
+}
+
+// 1. Package shape and version consistency.
+for (const pkgInfo of PACKAGES) {
+  const dir = join(ROOT, "packages", pkgInfo.dir);
+  for (const file of ["dist", "README.md", "LICENSE", "package.json"]) {
+    if (!existsSync(join(dir, file))) fail(`${pkgInfo.dir}: missing ${file}`);
   }
-  return out;
+  if (!existsSync(join(dir, "package.json"))) continue;
+  const pkg = readJson(join(dir, "package.json"));
+  if (pkg.name !== pkgInfo.name) fail(`${pkgInfo.dir}: package name is "${pkg.name}", expected "${pkgInfo.name}"`);
+  if (pkg.private) fail(`${pkgInfo.dir}: private:true blocks publishing`);
+  if (pkg.publishConfig?.access !== "public") fail(`${pkgInfo.dir}: publishConfig.access must be "public"`);
+  if (!String(pkg.repository?.url ?? "").includes("github.com/bolivian-peru/coronium-ai")) {
+    fail(`${pkgInfo.dir}: repository.url must point at bolivian-peru/coronium-ai`);
+  }
+  const constant = versionConstant(join(dir, pkgInfo.versionFile), pkgInfo.versionConst);
+  if (constant !== pkg.version) fail(`${pkgInfo.dir}: ${pkgInfo.versionConst} (${constant}) differs from package.json (${pkg.version})`);
+}
+
+const cliPkg = readJson(join(ROOT, "packages", "cli", "package.json"));
+if (cliPkg.dependencies?.["coronium-sdk"] !== "workspace:*") {
+  fail(`cli: coronium-sdk dependency must be "workspace:*" (pnpm publish pins it to the SDK version)`);
+}
+const sdkPkg = readJson(join(ROOT, "packages", "sdk-ts", "package.json"));
+if (Object.keys(sdkPkg.dependencies ?? {}).length > 0) fail("sdk-ts: the SDK must have no runtime dependencies");
+
+// 2. No leftover tarballs.
+function findTarballs(dir) {
+  const found = [];
+  for (const name of readdirSync(dir)) {
+    if (name === "node_modules" || name.startsWith(".")) continue;
+    const full = join(dir, name);
+    if (statSync(full).isDirectory()) found.push(...findTarballs(full));
+    else if (name.endsWith(".tgz")) found.push(full);
+  }
+  return found;
 }
 const tarballs = findTarballs(ROOT);
-if (tarballs.length) fail(`leftover tarballs: ${tarballs.join(", ")} — delete them before publishing`);
+if (tarballs.length > 0) fail(`leftover tarballs: ${tarballs.join(", ")}`);
 
-// 3. Secret scanner over the trees that will publish (dist/ + root files).
+// 3. Secrets and internal identifiers in everything that is public.
 const SECRET_PATTERNS = [
   /sk_live_[A-Za-z0-9]{10,}/,
   /sk_test_[A-Za-z0-9]{10,}/,
   /sk-[A-Za-z0-9]{20,}/,
+  /npm_[A-Za-z0-9]{30,}/,
   /AIza[A-Za-z0-9_-]{30,}/,
-  /ghp_[A-Za-z0-9]{20,}/,
+  /gh[pousr]_[A-Za-z0-9]{20,}/,
   /xox[baprs]-[A-Za-z0-9-]{10,}/,
   /AKIA[A-Z0-9]{16}/,
+  /eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}/,
   /-----BEGIN (RSA |EC |OPENSSH |DSA )?PRIVATE KEY-----/,
 ];
-const PROD_HOST_PATTERNS = [
-  /\b100\.(64|85|107|108)\.\d+\.\d+\b/,    // Tailscale internal
-  /\b65\.108\./, /\b37\.27\./, /\b95\.216\./, /\b91\.107\./, // prod IPs
-  /coronium-mongo|cor-api-v1|ts-api|ts-mongo/,
+const INTERNAL_PATTERNS = [
+  /\b100\.(64|85|107|108)\.\d+\.\d+\b/,
+  /\b(65\.108|37\.27|95\.216|91\.107)\.\d+\.\d+\b/,
+  /coronium-mongo|cor-api-v1|ts-api|ts-mongo|home\/projects/,
+  /mongodb(\+srv)?:\/\//i,
   /MONGO_HOST|MONGO_URI|STRIPE_SECRET|COINGATE_API_KEY|RESEND_API_KEY/,
+  /\bfarmer|\bKOEF\b|\bdefects?\b/i,
+  /[A-Za-z]+(Controller|Service)\.(js|ts):\d+/,
 ];
 
 function scanFile(path) {
   const text = readFileSync(path, "utf8");
-  for (const re of SECRET_PATTERNS) {
-    if (re.test(text)) fail(`secret-shaped string in ${path}: ${re}`);
+  for (const pattern of SECRET_PATTERNS) {
+    if (pattern.test(text)) fail(`secret-shaped string in ${path}: ${pattern}`);
   }
-  for (const re of PROD_HOST_PATTERNS) {
-    if (re.test(text)) fail(`production identifier in ${path}: ${re}`);
+  for (const pattern of INTERNAL_PATTERNS) {
+    if (pattern.test(text)) fail(`internal identifier in ${path}: ${pattern}`);
   }
 }
 
@@ -81,25 +108,26 @@ function walk(dir) {
   for (const name of readdirSync(dir)) {
     if (name === "node_modules" || name === ".git") continue;
     const full = join(dir, name);
-    const st = statSync(full);
-    if (st.isDirectory()) walk(full);
+    if (statSync(full).isDirectory()) walk(full);
     else if (/\.(ts|js|mjs|cjs|json|yaml|yml|md|txt)$/i.test(name)) scanFile(full);
   }
 }
 walk(join(ROOT, "packages"));
-for (const f of ["openapi.yaml", "AGENTS.md", "llms.txt", "README.md", "CHANGELOG.md"]) {
-  if (existsSync(join(ROOT, f))) scanFile(join(ROOT, f));
+for (const file of ["AGENTS.md", "llms.txt", "README.md", "CHANGELOG.md", "RELEASE.md"]) {
+  if (existsSync(join(ROOT, file))) scanFile(join(ROOT, file));
 }
 
-// ─── Report ────────────────────────────────────────────────────────────────
-
-if (warnings.length) {
-  console.warn("Warnings:");
-  for (const w of warnings) console.warn(`  ! ${w}`);
+// 4. Copy style in the published READMEs: short dashes only.
+for (const pkgInfo of PACKAGES) {
+  const readme = join(ROOT, "packages", pkgInfo.dir, "README.md");
+  if (existsSync(readme) && /[\u2013\u2014]/.test(readFileSync(readme, "utf8"))) {
+    fail(`${readme}: use "-" instead of en or em dashes`);
+  }
 }
-if (errors.length) {
+
+if (errors.length > 0) {
   console.error("Doctor found issues that block publishing:");
-  for (const e of errors) console.error(`  ✗ ${e}`);
+  for (const message of errors) console.error(`  x ${message}`);
   process.exit(1);
 }
-console.log("Doctor: ok — packages look publishable.");
+console.log("Doctor: ok - coronium-sdk and coronium-cli look publishable.");
