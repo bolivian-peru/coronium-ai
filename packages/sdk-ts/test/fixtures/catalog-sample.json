@@ -1,0 +1,244 @@
+{
+  "availableTariffs": [
+    {
+      "_id": "61eff6155a33f238ac15a8ff",
+      "name": "\"Three\" Carrier | 30-Day Plan",
+      "period": "month",
+      "price": 97,
+      "isShared": false,
+      "country_id": "60436110c991f968653db48f",
+      "country_name": "United Kingdom",
+      "country_code": "GB",
+      "carrier_id": "61eff55b5a33f238ac15a8fe",
+      "carrier_name": "Three",
+      "stock": 19,
+      "ip_stack": {
+        "ipv4": 19,
+        "ipv6": 0,
+        "native_ipv6": false
+      },
+      "features": {
+        "p0f": {
+          "count": 0,
+          "all": false
+        },
+        "openvpn": {
+          "count": 19,
+          "all": true
+        },
+        "ipv6_native": false
+      }
+    },
+    {
+      "_id": "61eff6785a33f238ac15a900",
+      "name": "\"Three\" Carrier | 7-Day Plan",
+      "period": "week",
+      "price": 33,
+      "isShared": false,
+      "country_id": "60436110c991f968653db48f",
+      "country_name": "United Kingdom",
+      "country_code": "GB",
+      "carrier_id": "61eff55b5a33f238ac15a8fe",
+      "carrier_name": "Three",
+      "stock": 19,
+      "ip_stack": {
+        "ipv4": 19,
+        "ipv6": 0,
+        "native_ipv6": false
+      },
+      "features": {
+        "p0f": {
+          "count": 0,
+          "all": false
+        },
+        "openvpn": {
+          "count": 19,
+          "all": true
+        },
+        "ipv6_native": false
+      }
+    },
+    {
+      "_id": "61effb965a33f238ac15a910",
+      "name": "\"T-Mobile\" Carrier | 30-Day Plan",
+      "period": "month",
+      "price": 139,
+      "isShared": false,
+      "country_id": "60b292a86f46de4a880f89d3",
+      "country_name": "United States",
+      "country_code": "US",
+      "carrier_id": "61eff86b5a33f238ac15a90e",
+      "carrier_name": "T-Mobile",
+      "stock": 2,
+      "ip_stack": {
+        "ipv4": 2,
+        "ipv6": 0,
+        "native_ipv6": false
+      },
+      "features": {
+        "p0f": {
+          "count": 0,
+          "all": false
+        },
+        "openvpn": {
+          "count": 2,
+          "all": true
+        },
+        "ipv6_native": false
+      }
+    },
+    {
+      "_id": "61effbaf5a33f238ac15a911",
+      "name": "\"T-Mobile\" Carrier | 7-Day Plan",
+      "period": "week",
+      "price": 49,
+      "isShared": false,
+      "country_id": "60b292a86f46de4a880f89d3",
+      "country_name": "United States",
+      "country_code": "US",
+      "carrier_id": "61eff86b5a33f238ac15a90e",
+      "carrier_name": "T-Mobile",
+      "stock": 2,
+      "ip_stack": {
+        "ipv4": 2,
+        "ipv6": 0,
+        "native_ipv6": false
+      },
+      "features": {
+        "p0f": {
+          "count": 0,
+          "all": false
+        },
+        "openvpn": {
+          "count": 2,
+          "all": true
+        },
+        "ipv6_native": false
+      }
+    }
+  ],
+  "countries": [
+    {
+      "_id": "60436110c991f968653db48f",
+      "country_code": "GB",
+      "name": "United Kingdom",
+      "carriers": [
+        {
+          "name": "Three",
+          "code": "THREE",
+          "_id": "61eff55b5a33f238ac15a8fe"
+        },
+        {
+          "name": "Three 5G",
+          "code": "THREE5G",
+          "_id": "64673b96b3df5c55af92ee03"
+        },
+        {
+          "name": "EE",
+          "code": "EE",
+          "_id": "648db4991b81c9f5891b9bd8"
+        }
+      ],
+      "description": "United Kingdom",
+      "regions": [
+        {
+          "name": "North London",
+          "code": "NRTH_LNDN",
+          "_id": "69dfd68f741584845092c3d7"
+        }
+      ]
+    },
+    {
+      "_id": "60b292a86f46de4a880f89d3",
+      "name": "United States",
+      "country_code": "US",
+      "description": "United States\n",
+      "carriers": [
+        {
+          "name": "T-Mobile",
+          "code": "TMOBILE",
+          "_id": "61eff86b5a33f238ac15a90e"
+        },
+        {
+          "name": "Verizon",
+          "code": "VERIZON",
+          "_id": "64875aea1b81c9f589e390fe"
+        },
+        {
+          "name": "T-Mobile 5G",
+          "code": "TMOB5G",
+          "_id": "673c2ac3724c63eb0711be88"
+        },
+        {
+          "name": "T-Mobile Premium",
+          "code": "TMOBPREM",
+          "_id": "67c8417bd38ae53bd2752755"
+        },
+        {
+          "name": "AT&T",
+          "code": "ATT",
+          "_id": "686b992aa251c6c65b98c664"
+        },
+        {
+          "name": "Verizon 5G",
+          "code": "VRZ5G",
+          "_id": "68f3618a033145e9f200580c"
+        },
+        {
+          "name": "T-Mobile GP",
+          "code": "TMOBGP",
+          "_id": "68ff53621f4c5f9981f42cf9"
+        },
+        {
+          "name": "T-Mobile+",
+          "code": "TMOBFL",
+          "_id": "6a675f14488727670b15381b"
+        }
+      ],
+      "regions": [
+        {
+          "name": "California",
+          "code": "CA",
+          "_id": "66d5e470628182817f4ad9da"
+        },
+        {
+          "name": "New Jersey",
+          "code": "NJ",
+          "_id": "687508b5ccf3873c97790f89"
+        },
+        {
+          "name": "Pennsylvania",
+          "code": "PA",
+          "_id": "687508b5ccf3873c97790f91"
+        }
+      ]
+    }
+  ],
+  "stock": [
+    {
+      "country_id": "60436110c991f968653db48f",
+      "carrier_id": "61eff55b5a33f238ac15a8fe",
+      "region_id": "69dfd68f741584845092c3d7",
+      "count": 10
+    },
+    {
+      "country_id": "60b292a86f46de4a880f89d3",
+      "carrier_id": "673c2ac3724c63eb0711be88",
+      "region_id": "66d5e470628182817f4ad9da",
+      "count": 1
+    },
+    {
+      "country_id": "60b292a86f46de4a880f89d3",
+      "carrier_id": "673c2ac3724c63eb0711be88",
+      "region_id": "687508b5ccf3873c97790f91",
+      "count": 6
+    },
+    {
+      "country_id": "60b292a86f46de4a880f89d3",
+      "carrier_id": "673c2ac3724c63eb0711be88",
+      "region_id": "687508b5ccf3873c97790f89",
+      "count": 1
+    }
+  ],
+  "_note": "Trimmed copy of the public catalog endpoints (/countries, /tariffs/available, /free-modems) captured 2026-10-17."
+}

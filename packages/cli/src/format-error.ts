@@ -1,171 +1,177 @@
-// Map stable error codes from the API → friendlier human-facing copy.
-// The structured `code` field stays unchanged for programmatic consumers
-// (SDK callers, the platform). This module is purely the human display layer.
-//
-// Keep messages:
-//   - actionable (suggest exactly which command to run next)
-//   - blame-free (no "you did X wrong" — just "here's the path forward")
-//   - bounded (~3 lines max)
+// Human-facing copy for API errors. The structured `code` is kept as-is for
+// --json consumers; this layer only adds a summary line and next-step hints.
+// Codes are matched case-insensitively: the API mixes `no_stock` and `OUT_OF_STOCK`.
 
 import kleur from "kleur";
-import { CoroniumError, CoroniumStockOutError } from "coronium-sdk";
-
-interface Friendly {
-  /** Single-line summary, shown after the red "error[CODE]" prefix. */
-  summary: string;
-  /** Optional follow-up hint(s). Each line is rendered in dim grey. */
-  hints?: string[];
-}
-
-const MAP: Record<string, (e: CoroniumError) => Friendly> = {
-  VOUCHER_NOT_FOUND: () => ({
-    summary: "That voucher doesn't exist.",
-    hints: [
-      "Check for typos. Vouchers are case-sensitive.",
-      "Get a fresh voucher at https://coronium.ai/free.",
-    ],
-  }),
-
-  VOUCHER_CONSUMED: () => ({
-    summary: "This voucher's already been used.",
-    hints: [
-      "If that was you and you lost your account: coronium init --restore  (uses your wallet/seed)",
-      "Otherwise, get a new voucher at https://coronium.ai/free",
-    ],
-  }),
-
-  VOUCHER_EXPIRED: () => ({
-    summary: "This voucher expired.",
-    hints: ["Get a fresh voucher at https://coronium.ai/free."],
-  }),
-
-  WALLET_ALREADY_REGISTERED: () => ({
-    summary: "This wallet is already linked to a Coronium account.",
-    hints: [
-      "To get a fresh API key without spending the voucher: coronium key:rotate",
-      "Or restore your existing account: coronium init --restore",
-    ],
-  }),
-
-  WALLET_NOT_REGISTERED: () => ({
-    summary: "No Coronium account exists for this wallet.",
-    hints: [
-      "If this is your first time: coronium init --voucher cor_v1_…",
-      "If you signed up with a different wallet, import that one instead.",
-    ],
-  }),
-
-  INVALID_KEY: () => ({
-    summary: "Your API key isn't valid (expired, revoked, or never existed).",
-    hints: [
-      "If you have your wallet:    coronium key:rotate",
-      "If you have your seed phrase: coronium init --restore",
-    ],
-  }),
-
-  MISSING_KEY: () => ({
-    summary: "No API key is set.",
-    hints: [
-      "Get a voucher at https://coronium.ai/free, then: coronium init --voucher cor_v1_…",
-      "Or set CORONIUM_API_KEY in your environment.",
-    ],
-  }),
-
-  STOCK_OUT: (e) => {
-    const stockErr = e instanceof CoroniumStockOutError ? e : null;
-    const summary = "That country/carrier combination is out of stock right now.";
-    const hints: string[] = [];
-    if (stockErr?.suggestions.length) {
-      hints.push("Available alternatives:");
-      for (const s of stockErr.suggestions.slice(0, 5)) {
-        hints.push(`  • ${s.country} / ${s.carrier} (${s.in_stock} in stock)`);
-      }
-      hints.push("Re-run with --country " + stockErr.suggestions[0]!.country.toLowerCase() + ".");
-    } else {
-      hints.push("Check stock with: coronium tariffs --country US --type 5g");
-    }
-    return { summary, hints };
-  },
-
-  SPEND_CAP_EXCEEDED: () => ({
-    summary: "This would exceed your spend cap.",
-    hints: [
-      "Top up by sending USDC to your wallet (run: coronium deposit).",
-      "Or override per-call with: --cost-cap-cents 100",
-    ],
-  }),
-
-  DAILY_CAP_EXCEEDED: () => ({
-    summary: "Daily spend cap reached.",
-    hints: [
-      "Wait until UTC midnight, OR raise your daily cap from the dashboard.",
-    ],
-  }),
-
-  TENANT_CAP_EXCEEDED: () => ({
-    summary: "Coronium tenant-wide daily cap reached. (Rare — usually means everyone is buying at once.)",
-    hints: ["Try again in a few minutes, or contact support@coronium.io."],
-  }),
-
-  INSUFFICIENT_BALANCE: () => ({
-    summary: "Not enough USDC balance for that operation.",
-    hints: [
-      "Top up with: coronium deposit",
-      "Send USDC on Base to your wallet address — it credits within ~10 seconds.",
-    ],
-  }),
-
-  CARRIER_NO_OP: () => ({
-    summary: "Rotation didn't take — the carrier didn't release the IP after retries.",
-    hints: ["Try replace instead: coronium proxy replace <id>"],
-  }),
-
-  RATE_LIMITED: () => ({
-    summary: "You're sending requests too quickly.",
-    hints: ["Slow down or back off for a minute."],
-  }),
-
-  UPSTREAM_PENDING: () => ({
-    summary: "Your account is provisional — Coronium's backend is still wiring up.",
-    hints: ["Try again in a moment. If this persists, the agent-native API may not be deployed yet."],
-  }),
-
-  UPSTREAM_UNREACHABLE: () => ({
-    summary: "Coronium's backend is unreachable from the API server.",
-    hints: ["Check https://coronium.ai/status. Try again in a moment."],
-  }),
-};
+import { CoroniumError } from "coronium-sdk";
+import { EXIT_OUTCOME_UNKNOWN, EXIT_REFUNDED, EXIT_REJECTED, EXIT_USAGE, UsageError } from "./output.js";
 
 export interface FormattedError {
-  /** Stable code, e.g. "STOCK_OUT". */
   code: string;
-  /** Friendly summary line. */
   summary: string;
-  /** Friendly hints, may be empty. */
   hints: string[];
-  /** The original raw error message (debug mode). */
-  raw_message: string;
-  /** HTTP status if relevant. */
-  status?: number;
+  status: number | null;
+  outcome: string;
+  exitCode: number;
+  requestId: string | null;
+  idempotencyKey: string | null;
+  retryAfterSeconds: number | null;
 }
 
-/** Build a structured FormattedError. */
-export function buildFormatted(e: CoroniumError): FormattedError {
-  const handler = MAP[e.code];
-  const friendly = handler
-    ? handler(e)
-    : { summary: e.message || "Request failed.", hints: [] };
+interface Friendly {
+  summary?: string;
+  hints: string[];
+}
+
+const LOCAL_USAGE_CODES: ReadonlySet<string> = new Set(["invalid_argument", "not_authenticated", "spending_disabled", "invalid_configuration"]);
+
+const FRIENDLY: Record<string, Friendly> = {
+  auth_required: {
+    summary: "The API token was rejected or is missing.",
+    hints: ["Check CORONIUM_API_TOKEN, or run: coronium login --token <token>"],
+  },
+  not_authenticated: {
+    hints: ["Create a token at dashboard.coronium.io (Account, API Access), then run: coronium login --token <token>"],
+  },
+  route_not_found: {
+    summary: "The API does not have this route. The base URL is wrong or this CLI is out of date.",
+    hints: ["Unset CORONIUM_BASE_URL to use https://api.coronium.io/api/v3, or upgrade: npm i -g coronium-cli@latest"],
+  },
+  invalid_response: {
+    summary: "The API answered with something other than the expected JSON.",
+    hints: ["Run: coronium status"],
+  },
+  no_stock: {
+    summary: "That plan is out of stock right now.",
+    hints: ["See what is in stock: coronium tariffs --country <CC>"],
+  },
+  out_of_stock: {
+    summary: "That plan is out of stock right now.",
+    hints: ["See what is in stock: coronium tariffs --country <CC>"],
+  },
+  insufficient_stock: {
+    hints: ["Lower --count or pick another plan: coronium tariffs"],
+  },
+  tariff_unavailable: {
+    hints: ["List plans on sale: coronium tariffs"],
+  },
+  insufficient_credit: {
+    summary: "Not enough account credit for this order.",
+    hints: ["Top up at dashboard.coronium.io, then try again."],
+  },
+  payment_in_progress: {
+    summary: "Another payment on this account is still running.",
+    hints: ["Wait a few seconds, then check: coronium proxy list"],
+  },
+  renewal_already_pending: {
+    summary: "An earlier renewal of this proxy has not been delivered yet.",
+    hints: ["Do not renew again. Check: coronium proxy list"],
+  },
+  price_changed: {
+    hints: ["Run the quote again and approve the new total with --max-total."],
+  },
+  spending_disabled: {
+    hints: ["Turn spending on with: coronium spending on (or set CORONIUM_ALLOW_SPENDING=1)"],
+  },
+  idempotency_conflict: {
+    hints: ["Use a new --key for a new order."],
+  },
+  incomplete_renewal_quote: {
+    hints: ["Check the proxy ids with: coronium proxy list"],
+  },
+  proxy_not_found: {
+    hints: ["List your proxies: coronium proxy list"],
+  },
+  voucher_invalid: {
+    summary: "That voucher is not valid.",
+    hints: ["Vouchers are case-sensitive. Check for typos."],
+  },
+  voucher_already_consumed: {
+    summary: "This voucher has already been used.",
+    hints: ["If it was yours and you still have the wallet: coronium init --restore"],
+  },
+};
+
+function friendlyFor(code: string): Friendly | undefined {
+  return FRIENDLY[code.toLowerCase()];
+}
+
+function exitCodeFor(error: CoroniumError): number {
+  if (error.outcome === "unknown") return EXIT_OUTCOME_UNKNOWN;
+  if (error.outcome === "refunded_not_charged") return EXIT_REFUNDED;
+  if (LOCAL_USAGE_CODES.has(error.code)) return EXIT_USAGE;
+  return EXIT_REJECTED;
+}
+
+function outcomeHints(error: CoroniumError): string[] {
+  const hints: string[] = [];
+  if (error.outcome === "unknown") {
+    hints.push("The result is unknown: it may have gone through. Check before trying again (coronium proxy list).");
+  }
+  if (error.outcome === "refunded_not_charged") {
+    hints.push("Nothing was charged: the API refunded the order.");
+  }
+  if (error.isRateLimited && error.retryAfterSeconds !== undefined) {
+    hints.push(`Rate limited. Wait ${error.retryAfterSeconds} seconds before trying again.`);
+  }
+  if (error.isRateLimited && error.retryAfterSeconds === undefined) {
+    hints.push("Rate limited. Wait a minute before trying again.");
+  }
+  if (error.idempotencyKey) hints.push(`Idempotency key: ${error.idempotencyKey}`);
+  if (error.requestId) hints.push(`Request id: ${error.requestId}`);
+  return hints;
+}
+
+export function formatCoroniumError(error: CoroniumError): FormattedError {
+  const friendly: Friendly | undefined = friendlyFor(error.code);
   return {
-    code: e.code,
-    summary: friendly.summary,
-    hints: friendly.hints ?? [],
-    raw_message: e.message,
-    status: e.status,
+    code: error.code,
+    summary: friendly?.summary ?? error.message,
+    hints: [...(friendly?.hints ?? []), ...outcomeHints(error)],
+    status: error.status ?? null,
+    outcome: error.outcome,
+    exitCode: exitCodeFor(error),
+    requestId: error.requestId ?? null,
+    idempotencyKey: error.idempotencyKey ?? null,
+    retryAfterSeconds: error.retryAfterSeconds ?? null,
   };
 }
 
-/** Print to stderr with kleur formatting. */
-export function printPretty(f: FormattedError): void {
-  console.error(kleur.red(`error[${f.code}]`) + " " + f.summary);
-  for (const h of f.hints) console.error("  " + kleur.dim(h));
+export function formatUsageError(error: UsageError): FormattedError {
+  return {
+    code: "usage",
+    summary: error.message,
+    hints: error.hints,
+    status: null,
+    outcome: "rejected",
+    exitCode: EXIT_USAGE,
+    requestId: null,
+    idempotencyKey: null,
+    retryAfterSeconds: null,
+  };
+}
+
+export function formatUnknownError(error: unknown): FormattedError {
+  let message: string = String(error);
+  if (error instanceof Error) message = error.message;
+  return {
+    code: "error",
+    summary: message,
+    hints: [],
+    status: null,
+    outcome: "rejected",
+    exitCode: EXIT_REJECTED,
+    requestId: null,
+    idempotencyKey: null,
+    retryAfterSeconds: null,
+  };
+}
+
+export function printPretty(formatted: FormattedError): void {
+  console.error(`${kleur.red(`error[${formatted.code}]`)} ${formatted.summary}`);
+  for (const hint of formatted.hints) console.error(kleur.dim(`  ${hint}`));
+}
+
+export function printJsonError(formatted: FormattedError): void {
+  console.log(JSON.stringify({ error: formatted }, null, 2));
 }

@@ -1,78 +1,90 @@
-// `coronium status` — single-command health check. Useful for triaging
-// "is it me or is it the API?" situations.
+// `coronium status`: is it me or the API? Checks a public catalog route, then
+// the token, and reports a route mismatch instead of a false green.
 
 import kleur from "kleur";
-import { loadConfig, getApiKey, getBaseUrl } from "../config.js";
-import { loadWallet } from "../wallet.js";
-import { isJsonMode, printJson } from "../format.js";
+import { CONTRACT_ID, CoroniumError, type Coronium } from "coronium-sdk";
+import { makeClient } from "../client.js";
+import { getApiToken, isSpendingAllowed, loadConfig, type CliConfig } from "../config.js";
+import { EXIT_REJECTED, ExitWith, isJson, printJson, type GlobalOptions } from "../output.js";
+import { CLI_VERSION } from "../version.js";
+import { loadWallet, type StoredWallet } from "../wallet.js";
 
-const DEFAULT_BASE = "https://api.coronium.io/api/v3";
+type Check = { ok: boolean; detail: string };
 
-export async function statusCommand(opts: { json?: boolean }): Promise<void> {
-  const cfg = await loadConfig();
-  const apiKey = getApiKey(cfg);
-  const baseUrl = (getBaseUrl(cfg) ?? DEFAULT_BASE).replace(/\/$/, "");
-  const wallet = await loadWallet();
+function describeFailure(error: unknown): string {
+  if (error instanceof CoroniumError) return `${error.code}: ${error.message}`;
+  if (error instanceof Error) return error.message;
+  return String(error);
+}
 
-  const result = {
-    config: {
-      api_key: apiKey ? `${apiKey.slice(0, 16)}…(set)` : null,
-      base_url: baseUrl,
-      wallet_address: wallet?.address ?? null,
-      wallet_chain: "evm",
-      mnemonic_present: Boolean(wallet?.mnemonic),
-    },
-    backend: { health: "unknown" as "ok" | "down" | "unknown", latency_ms: 0 },
-    auth: { ok: false, code: "" as string | undefined },
-  };
-
-  // Health check (unauth) — /tariffs/available is a public, fast probe.
-  const healthUrl = `${baseUrl}/tariffs/available`;
-  const t0 = Date.now();
+async function checkApi(client: Coronium): Promise<Check> {
+  const started: number = Date.now();
   try {
-    const r = await fetch(healthUrl);
-    result.backend.health = r.ok ? "ok" : "down";
-    result.backend.latency_ms = Date.now() - t0;
+    const countries = await client.catalog.countries();
+    return { ok: countries.length > 0, detail: `${countries.length} countries in ${Date.now() - started} ms` };
+  } catch (error) {
+    return { ok: false, detail: describeFailure(error) };
+  }
+}
+
+async function checkAuth(client: Coronium, hasToken: boolean): Promise<Check> {
+  if (!hasToken) return { ok: false, detail: "no token configured" };
+  try {
+    const account = await client.account.get();
+    return { ok: true, detail: `signed in as ${account.login ?? account.name ?? account._id}` };
+  } catch (error) {
+    return { ok: false, detail: describeFailure(error) };
+  }
+}
+
+async function readWallet(): Promise<StoredWallet | undefined> {
+  try {
+    return await loadWallet({ noPrompt: true });
   } catch {
-    result.backend.health = "down";
-    result.backend.latency_ms = Date.now() - t0;
+    return undefined;
   }
+}
 
-  // Auth check — /account uses ?auth_token= (Coronium pattern), 200 means valid.
-  if (apiKey && result.backend.health === "ok") {
-    try {
-      const r = await fetch(`${baseUrl}/account?auth_token=${encodeURIComponent(apiKey)}`);
-      if (r.ok) {
-        result.auth.ok = true;
-      } else {
-        const body = await r.json().catch(() => ({}));
-        result.auth.code = (body as any).code ?? `HTTP_${r.status}`;
-      }
-    } catch {
-      result.auth.code = "NETWORK_ERROR";
-    }
+function mark(value: boolean): string {
+  if (value) return kleur.green("✓");
+  return kleur.red("✗");
+}
+
+export async function statusCommand(options: GlobalOptions): Promise<void> {
+  const config: CliConfig = await loadConfig();
+  const hasToken: boolean = Boolean(getApiToken(config));
+  const client: Coronium = await makeClient({ requireToken: false });
+  const api: Check = await checkApi(client);
+  const auth: Check = await checkAuth(client, hasToken);
+  const wallet: StoredWallet | undefined = await readWallet();
+  const spending: boolean = isSpendingAllowed(config);
+
+  if (isJson(options)) {
+    printJson({
+      cli_version: CLI_VERSION,
+      contract: CONTRACT_ID,
+      base_url: client.baseUrl,
+      api,
+      auth,
+      token_configured: hasToken,
+      wallet_address: wallet?.address ?? null,
+      spending_enabled: spending,
+    });
+    failIfUnhealthy(api, auth, hasToken);
+    return;
   }
-
-  if (isJsonMode(opts)) return printJson(result);
-
-  const ok = (b: boolean) => (b ? kleur.green("✓") : kleur.red("✗"));
-  console.log(kleur.bold("Coronium status"));
+  console.log(kleur.bold(`Coronium CLI ${CLI_VERSION}`) + kleur.dim(` (contract ${CONTRACT_ID})`));
   console.log("");
-  console.log(`  ${kleur.dim("base url      ")} ${baseUrl}`);
-  console.log(`  ${kleur.dim("backend       ")} ${ok(result.backend.health === "ok")} ${result.backend.health} (${result.backend.latency_ms}ms)`);
-  console.log(`  ${kleur.dim("api key       ")} ${ok(Boolean(apiKey))} ${apiKey ? "configured" : "missing — run " + kleur.bold("coronium init")}`);
-  if (apiKey) {
-    console.log(`  ${kleur.dim("auth          ")} ${ok(result.auth.ok)} ${result.auth.ok ? "valid" : `failed: ${result.auth.code ?? "unknown"}`}`);
-  }
-  console.log(`  ${kleur.dim("wallet        ")} ${ok(Boolean(wallet))} ${wallet?.address ?? "not set"}`);
-  console.log(`  ${kleur.dim("mnemonic file ")} ${ok(result.config.mnemonic_present)} ${result.config.mnemonic_present ? "stored" : "not stored (you may have noted it elsewhere)"}`);
-  console.log("");
+  console.log(`  ${kleur.dim("base url ")} ${client.baseUrl}`);
+  console.log(`  ${kleur.dim("api      ")} ${mark(api.ok)} ${api.detail}`);
+  console.log(`  ${kleur.dim("token    ")} ${mark(auth.ok)} ${auth.detail}`);
+  console.log(`  ${kleur.dim("wallet   ")} ${mark(Boolean(wallet))} ${wallet?.address ?? "not set (only needed for voucher sign-up)"}`);
+  console.log(`  ${kleur.dim("spending ")} ${spending ? "on" : "off"}`);
+  failIfUnhealthy(api, auth, hasToken);
+}
 
-  if (result.backend.health !== "ok") {
-    console.log(kleur.yellow("Backend is unreachable.") + " Check https://status.coronium.ai (when live) or your CORONIUM_BASE_URL env.");
-  } else if (!apiKey) {
-    console.log("Get started: " + kleur.bold("coronium init --voucher cor_v1_…") + "  (free voucher at https://coronium.ai/free)");
-  } else if (!result.auth.ok) {
-    console.log(kleur.yellow("API key rejected.") + " Try " + kleur.bold("coronium key:rotate") + " if you still have your wallet.");
-  }
+// A broken API or a rejected token must never exit 0.
+function failIfUnhealthy(api: Check, auth: Check, hasToken: boolean): void {
+  if (!api.ok) throw new ExitWith(EXIT_REJECTED);
+  if (hasToken && !auth.ok) throw new ExitWith(EXIT_REJECTED);
 }

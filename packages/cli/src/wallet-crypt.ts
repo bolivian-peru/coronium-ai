@@ -11,7 +11,7 @@
 //     "ciphertext": "<base64>"
 //   }
 //
-// The plaintext is whatever was originally in `wallet.json` — typically a
+// The plaintext is whatever was originally in `wallet.json` - typically a
 // `StoredWallet` object including the privateKey and mnemonic.
 //
 // Why scrypt and not Argon2id? Node has scrypt built-in (no native binding,
@@ -21,7 +21,7 @@
 
 import { scryptSync, randomBytes, createCipheriv, createDecipheriv, timingSafeEqual } from "node:crypto";
 
-export const SCRYPT_N = 131072; // 2^17 — ~256 MB peak, ~200 ms on commodity hardware
+export const SCRYPT_N = 131072; // 2^17 - ~256 MB peak, ~200 ms on commodity hardware
 export const SCRYPT_R = 8;
 export const SCRYPT_P = 1;
 export const SCRYPT_KEY_LEN = 32; // 256-bit key for AES-256

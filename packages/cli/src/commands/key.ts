@@ -1,29 +1,24 @@
 import kleur from "kleur";
-import { loadConfig, getApiKey, saveConfig } from "../config.js";
-import { accountFromStored, loadWallet, WALLET_FILE } from "../wallet.js";
-import { api } from "../api.js";
+import type { WalletRotateResult } from "coronium-sdk";
+import { getApiToken, loadConfig, saveConfig, type CliConfig } from "../config.js";
+import { isJson, printJson, UsageError, type GlobalOptions } from "../output.js";
+import { loadWallet, WALLET_FILE, type StoredWallet } from "../wallet.js";
+import { rotateWithWallet } from "./init.js";
 
-export async function keyRotateCommand(_opts: { json?: boolean }): Promise<void> {
-  const stored = await loadWallet();
+export async function keyRotateCommand(options: GlobalOptions): Promise<void> {
+  const stored: StoredWallet | undefined = await loadWallet();
   if (!stored) {
-    console.error(kleur.red(`No wallet found at ${WALLET_FILE}.`));
-    console.error(`Run ${kleur.bold("coronium init --restore")} to import a wallet first.`);
-    process.exit(2);
+    throw new UsageError(`No wallet found at ${WALLET_FILE}.`, ["Import one first: coronium init --restore"]);
   }
-  const cfg = await loadConfig();
-  const apiKey = getApiKey(cfg);
-  if (!apiKey) {
-    console.error(kleur.red(`No API key found. Run ${kleur.bold("coronium init")} first.`));
-    process.exit(2);
+  const config: CliConfig = await loadConfig();
+  const token: string | undefined = getApiToken(config);
+  if (!token) throw new UsageError("No API token found. Run coronium init first.");
+  const result: WalletRotateResult = await rotateWithWallet(stored, token);
+  await saveConfig({ ...config, api_key: result.api_token });
+  if (isJson(options)) {
+    printJson({ rotated: true, wallet_address: stored.address });
+    return;
   }
-
-  const account = accountFromStored(stored);
-  const challenge = await api.rotateChallenge({ wallet_address: stored.address, api_key: apiKey });
-  const signature = await account.signMessage({ message: challenge.siwe_message });
-  const result = await api.rotate({ siwe_message: challenge.siwe_message, signature, wallet_address: stored.address, api_key: apiKey });
-
-  await saveConfig({ ...cfg, api_key: result.api_key });
-
-  console.log(kleur.green("✓") + ` New API key issued. Old keys revoked.`);
-  console.log(`  ${kleur.dim("api key ")} ${result.api_key}`);
+  console.log(`${kleur.green("✓")} New API token issued and stored.`);
+  console.log(kleur.dim("  Earlier tokens are not revoked by this command; they stay valid until they expire."));
 }

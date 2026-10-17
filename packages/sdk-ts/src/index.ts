@@ -1,3 +1,13 @@
-export { Coronium } from "./client.js";
-export { CoroniumError, CoroniumStockOutError } from "./errors.js";
+export { Coronium, type CoroniumOptions } from "./client.js";
+export { CoroniumError, isCoroniumError, redact, type CoroniumErrorInit, type RequestOutcome } from "./errors.js";
+export { ROUTES, type HttpMethod, type RouteAuth, type RouteName, type RouteSpec } from "./routes.js";
+export { normalizeBaseUrl, type FetchLike } from "./transport.js";
+export { isCompletedRotation, toRotationResult } from "./rotation.js";
+export { connectionUrls, endpointUrl, proxyHost, type ConnectionUrls, type ProxyProtocol } from "./proxy-urls.js";
+export { toCustomerTicket, type TicketListOptions } from "./resources/tickets.js";
+export { verifyWebhookSignature } from "./resources/webhook.js";
+export type { TariffFilter, StockFilter } from "./resources/catalog.js";
+export type { WaitOptions, OpenVpnOptions } from "./resources/proxies.js";
+export type { WalletChallengeInput, WalletSignupInput, WalletRotateInput } from "./resources/wallet.js";
+export { CONTRACT_ID, DEFAULT_BASE_URL, SDK_VERSION } from "./version.js";
 export type * from "./types.js";

@@ -53,11 +53,11 @@ export async function walletEncryptCommand(opts: BaseOpts): Promise<void> {
     }
   } else {
     if (process.env.CORONIUM_NON_INTERACTIVE === "1") {
-      throw new Error("Headless mode: set CORONIUM_WALLET_PASSPHRASE (≥ 8 chars) before running wallet:encrypt.");
+      throw new Error("Headless mode: set CORONIUM_WALLET_PASSPHRASE (at least 8 chars) before running wallet:encrypt.");
     }
     if (!opts.json) {
       console.log("Encrypting wallet at " + kleur.bold(WALLET_FILE));
-      console.log(kleur.dim("Passphrase ≥ 8 chars. We can't recover this for you — write it down."));
+      console.log(kleur.dim("Passphrase at least 8 chars. We can't recover this for you - write it down."));
     }
     passphrase = await readPassphrase("New passphrase:", true);
   }
@@ -68,7 +68,7 @@ export async function walletEncryptCommand(opts: BaseOpts): Promise<void> {
     console.log(JSON.stringify({ encrypted: true, file: WALLET_FILE, seed_file_removed: true }));
   } else {
     console.log(kleur.green("✓") + ` Wallet encrypted at ${WALLET_FILE}`);
-    console.log(kleur.dim("  seed.txt removed — the mnemonic now lives only in the encrypted wallet."));
+    console.log(kleur.dim("  seed.txt removed - the mnemonic now lives only in the encrypted wallet."));
     console.log(kleur.dim("  Subsequent commands (key:rotate, init --restore) will prompt for the passphrase,"));
     console.log(kleur.dim("  or read CORONIUM_WALLET_PASSPHRASE env in headless mode."));
   }

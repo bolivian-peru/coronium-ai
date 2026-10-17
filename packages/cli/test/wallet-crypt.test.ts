@@ -1,5 +1,5 @@
 // Round-trip and bad-passphrase tests for the encryption layer.
-// Pure-function level — no filesystem, no CLI. Fast.
+// Pure-function level - no filesystem, no CLI. Fast.
 
 import { describe, expect, it } from "vitest";
 import {

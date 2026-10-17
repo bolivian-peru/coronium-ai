@@ -1,143 +1,120 @@
 # coronium-sdk
 
-[![npm](https://img.shields.io/npm/v/coronium-sdk.svg?label=coronium-sdk)](https://www.npmjs.com/package/coronium-sdk)
-[![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
-
-> Typed TypeScript client for the [Coronium](https://coronium.ai) mobile 4G/5G proxy API. Browser- and Node-compatible. Built-in retry on transient failures.
+Typed TypeScript client for the [Coronium](https://www.coronium.io) mobile proxy API, `https://api.coronium.io/api/v3`. Node 20 or later, no runtime dependencies.
 
 ```bash
 npm install coronium-sdk
 ```
 
-## Quickstart
-
 ```ts
-import { Coronium } from "coronium-sdk";
+import { Coronium, connectionUrls } from "coronium-sdk";
 
-const c = new Coronium({ apiKey: process.env.CORONIUM_API_KEY! });
+const coronium = new Coronium({ token: process.env.CORONIUM_API_TOKEN });
 
-// Buy a US 5G mobile proxy
-const [proxy] = await c.proxies.buy({ country: "US", type: "5g" });
-console.log(`http://${proxy.username}:${proxy.password}@${proxy.host}:${proxy.port_http}`);
+const account = await coronium.account.get();
+console.log(`Account credit: $${account.accountCredit}`);
 
-// Rotate the IP — verified externally, no false positives
-await c.proxies.rotate(proxy.id);
-
-// Release when done
-await c.proxies.release(proxy.id);
-```
-
-Don't have an API key yet? Get a free voucher at <https://coronium.ai/free> and run `npm install -g coronium-cli && coronium init --voucher cor_v1_…` — that mints the key and stores it locally.
-
-## API surface
-
-The seven verbs, plus account creation:
-
-```ts
-c.account.create({ email? })             // POST /account/create — sign up, returns API key
-c.balance.get()                           // GET  /balance
-c.deposit.address({ chain? })             // POST /deposit/address (base | tron | ethereum)
-c.tariffs.list({ country?, type? })       // GET  /tariffs
-c.proxies.list()                          // GET  /proxies
-c.proxies.buy(req, { costCapCents? })     // POST /proxies — the hero verb
-c.proxies.release(id)                     // DELETE /proxies/{id}
-c.proxies.rotate(id)                      // POST /proxies/{id}/rotate
-c.proxies.replace(id)                     // POST /proxies/{id}/replace
-```
-
-Every method returns a fully-typed Promise. See `dist/types.d.ts` for the full schema.
-
-## Error handling
-
-All non-2xx responses throw a `CoroniumError` with a stable `code` field — branch on `code`, never on `message`. Stock-outs throw the more specific `CoroniumStockOutError` which exposes `suggestions` (alternative country/carrier in stock).
-
-```ts
-import { CoroniumError, CoroniumStockOutError } from "coronium-sdk";
-
-try {
-  const [proxy] = await c.proxies.buy({ country: "US", carrier: "tmobile" });
-} catch (e) {
-  if (e instanceof CoroniumStockOutError) {
-    console.log("Out of stock. Try one of:", e.suggestions);
-    // → [{ country: "GB", carrier: "Three", in_stock: 8 }, ...]
-  } else if (e instanceof CoroniumError && e.code === "INSUFFICIENT_BALANCE") {
-    console.log("Top up needed.");
-  } else {
-    throw e;
-  }
+for (const proxy of await coronium.proxies.list()) {
+  console.log(proxy.name, connectionUrls(proxy).socks5);
 }
 ```
 
-Stable codes: `MISSING_KEY`, `INVALID_KEY`, `STOCK_OUT`, `INSUFFICIENT_BALANCE`, `SPEND_CAP_EXCEEDED`, `DAILY_CAP_EXCEEDED`, `CARRIER_NO_OP`, `RATE_LIMITED`, `VOUCHER_*`, `WALLET_*`. See the [OpenAPI spec](https://dashboard.coronium.io/api-docs/) for the full list.
+Create the token in the dashboard: dashboard.coronium.io, Account, API Access. The public catalog (`catalog.countries`, `catalog.tariffs`, `catalog.availableTariffs`, `catalog.stock`) works without a token.
 
-## Spend caps
+## Upgrading from 0.x
 
-Server-enforced. Pass a one-shot cap on a single buy:
+0.x targeted an API that was never shipped: 8 of its 9 methods called routes that do not exist on `api.coronium.io` and returned an HTML page as the result. 1.0 is a rewrite; there is no compatible upgrade path, and nothing from 0.x worked to begin with.
 
-```ts
-await c.proxies.buy(
-  { country: "DE", qty: 5 },
-  { costCapCents: 100 }, // $1.00 max — server returns SPEND_CAP_EXCEEDED if exceeded
-);
-```
-
-Or set a default at construction time:
+## Client options
 
 ```ts
-const c = new Coronium({ apiKey, costCapCents: 500 }); // $5 max per call
-```
-
-## Retries (built-in)
-
-The SDK retries transient failures automatically — only on idempotent verbs. Network errors (`ECONNREFUSED`, `ECONNRESET`, `ETIMEDOUT`, `ENOTFOUND`) and HTTP `502`/`503`/`504` trigger up to 3 retries with exponential backoff (200 ms → 800 ms → 3200 ms) plus ±15% jitter.
-
-| Method | Retried? |
-|---|---|
-| `balance.get()`, `tariffs.list()`, `proxies.list()` | ✅ — pure reads |
-| `proxies.release()` | ✅ — second DELETE just 404s |
-| `proxies.rotate()` | ✅ — rotating twice is fine |
-| `account.create()` | ✅ — server-side idempotent on retry |
-| `deposit.address()` | ✅ — returns existing address |
-| `proxies.buy()` | ❌ — would double-charge |
-| `proxies.replace()` | ❌ — creates a new proxy each call |
-
-You don't need to do anything to enable this. If you'd rather control retries yourself, wrap calls in your own retry loop.
-
-## Configuration
-
-```ts
-const c = new Coronium({
-  apiKey: "eyJhbGc…",                            // required
-  baseUrl: "https://api.coronium.io/api/v3",          // default; override for staging / local mock
-  costCapCents: 500,                              // optional global per-call cap
-  userAgent: "my-scraper/1.0",                    // shows up in API logs
-  timeoutMs: 30_000,                              // per-attempt timeout
-  fetch: customFetch,                             // optional; defaults to globalThis.fetch
+new Coronium({
+  token,                    // optional for the public catalog
+  baseUrl,                  // default https://api.coronium.io/api/v3 (https only, http allowed on localhost)
+  allowSpending: false,     // must be true for spending.buy / spending.renew
+  timeoutMs: 30_000,        // ordinary calls
+  actionTimeoutMs: 180_000, // rotate, replace, test
+  purchaseTimeoutMs: 180_000,
+  fetch,                    // custom fetch for tests
 });
 ```
 
-`baseUrl` accepts the public API (`https://api.coronium.io/api/v3`), a self-hosted instance, or a local development mock (e.g., `http://127.0.0.1:5050/v1` running [coronium-ai/apps/mock-api](https://github.com/bolivian-peru/coronium-ai/tree/main/apps/mock-api)).
+## Methods
 
-## Browser usage
+Every method maps to one real `/api/v3` route, listed in `ROUTES`.
 
-Works in modern browsers without polyfills. Bundle with Vite, Webpack, or any other ES-module-aware tool:
+**account**
+- `get()`: identity, `accountCredit` (USD), `btc.balance`, `usdt.balance`.
+- `cryptoBalances()`: BTC, USDT (TRC-20) and account-credit balances with deposit addresses. The first call creates the deposit wallets.
+- `payment(paymentId)`: status of a payment, for example after a 202 purchase.
+
+**catalog**
+- `countries()`: countries with carriers and regions.
+- `tariffs()`: every plan, including ones with no stock.
+- `availableTariffs({ countryCode?, carrierId?, carrierName? })`: plans in stock, filtered client-side (the API ignores filters).
+- `stock({ countryCode?, carrierId? })`: stock counts by country, carrier and region, with names resolved.
+- `renewalQuote(items, coupon?)`: price a renewal of proxies you own. Read-only. Refuses a quote that leaves a proxy out or prices different days.
+
+**proxies**
+- `list()`, `get(idOrNameOrPortId)`: your proxies, with credentials (treat as secrets).
+- `rotate(id)`: returns `{ state: "done" }`, `{ state: "rotating" }` (asynchronous provider: poll, never resubmit) or `{ state: "unchanged" }` (the carrier kept the IP; retry after the cooldown).
+- `rotationStatus(id)`, `waitForRotation(id, { timeoutMs, intervalMs })`.
+- `rotateByToken(token)`: the public rotation link. It is a GET that rotates on every fetch, so never paste it where link previews run.
+- `replace(id)`: swap for another modem. Irreversible: new host, new credentials, default quota 2 per 24 hours.
+- `openvpn(id, { proto? })`: profile text. Some providers issue a new certificate per call or allow one download.
+- `test(id)`: the API's connectivity check, as `{ ok, extIp, error }`.
+- `setWhitelist(id, ips)`: Coronium Node proxies only.
+
+**tickets**: `list()`, `get(id)`, `create({ subject, message, category?, relatedProxies? })`, `reply(id, message)`, `archive(id)` (hides, does not close). Staff-only fields are stripped from every response.
+
+**webhook**: `get()`, `set(httpsUrl)`, `delete()`, `rotateSecret()` (secret shown once), `test()`. Setting a webhook also turns on automatic replacement of dead proxies. Verify deliveries with `verifyWebhookSignature(rawBody, header, secret)`.
+
+**wallet**: the HTTP half of voucher sign-up and key rotation for wallet-bound accounts: `challenge`, `signup`, `rotateChallenge`, `rotate`. You sign the SIWE message yourself (the CLI uses viem); the SDK has no wallet dependencies.
+
+## Spending (charges money)
+
+`spending.buy` and `spending.renew` **charge real money**. They are disabled unless the client is created with `allowSpending: true`, and each call needs `expectedTotalUsd`, the total the user approved.
 
 ```ts
-import { Coronium } from "coronium-sdk";
-const c = new Coronium({ apiKey: window.__CORONIUM_KEY__ });
-const balance = await c.balance.get();
+const coronium = new Coronium({ token, allowSpending: true });
+
+const quote = await coronium.spending.quoteBuy(tariffId, 1);        // read-only
+// ...show quote.totalUsd to the user and get an explicit yes...
+const receipt = await coronium.spending.buy({
+  tariffId,
+  quantity: 1,
+  funding: "account_credit",      // or "btc"; there is no default
+  expectedTotalUsd: quote.totalUsd,
+});
 ```
 
-> **Storage warning:** never put `eyJhbGc…` keys in `localStorage` long-term. They're bearer credentials. Prefer first-party HTTP-only cookies or short-lived bootstrap tokens. See the [embed-signup security guide](https://github.com/bolivian-peru/coronium-ai/blob/main/skills/embed-signup/references/security.md).
+What the SDK does for you:
+- Re-reads the live price and stock right before sending. A total above `expectedTotalUsd` throws `price_changed` and nothing is sent. A lower price is accepted.
+- Sends `max_total_usd` with the order so the API can enforce the cap once it supports it. Until then, the check is client-side and a price change in the seconds between check and charge is still possible.
+- Sends an `Idempotency-Key` (generated, or yours). Identical concurrent calls in one process share one request; reusing a key for a different order throws `idempotency_conflict`.
+- A buy sends only `tariff_id` and `modemCount`; a renewal sends only `modems`, never both.
+- Coupons do not lower the check: the API can charge full price when a coupon is used up, so approve the undiscounted total.
 
-## Reference
+Read the receipt:
+- `status: "delivered"`: 200 with every ordered proxy.
+- `status: "unverified"`: 200 but fewer proxies than ordered. **Do not buy again**; check `account.payment` and `proxies.list`.
+- `status: "processing"`: 202. Poll `account.payment(receipt.paymentId)`.
 
-- API spec: <https://dashboard.coronium.io/api-docs/>
-- Coronium homepage: <https://coronium.ai>
-- Source: <https://github.com/bolivian-peru/coronium-ai/tree/main/packages/sdk-ts>
-- Companion packages:
-  - [`coronium-cli`](https://www.npmjs.com/package/coronium-cli) — same surface, from your shell
-  - [`coronium-mcp`](https://www.npmjs.com/package/coronium-mcp) — MCP server for Claude / Cursor / Windsurf
+## Errors
+
+Every failure is a `CoroniumError` with `status`, `code` (as sent by the API, usually lowercase snake case), `message`, `requestId`, `retryAfterSeconds` and `outcome`:
+
+- `rejected`: nothing changed.
+- `unknown`: a write may have happened (5xx, timeout, network error, or a 2xx without confirmation). Check state before retrying.
+- `refunded_not_charged`: the purchase failed and the API refunded it in the same response.
+
+Use `error.isRateLimited` (HTTP 429) rather than matching codes; the API rewrites some rate-limit codes. The SDK never retries a request.
+
+Codes the SDK adds itself: `route_not_found` (the API redirected, which means the route does not exist on that server), `invalid_response` (HTML, empty or malformed body), `not_authenticated`, `spending_disabled`, `price_changed`, `insufficient_stock`, `tariff_unavailable`, `incomplete_renewal_quote`, `idempotency_conflict`, `proxy_not_found`, `invalid_argument`, `timeout`, `network_error`.
+
+## Support
+
+hello@coronium.io
 
 ## License
 

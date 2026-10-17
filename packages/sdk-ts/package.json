@@ -1,7 +1,7 @@
 {
   "name": "coronium-sdk",
-  "version": "0.2.0",
-  "description": "Typed TypeScript client for the Coronium mobile-proxy API.",
+  "version": "1.0.0",
+  "description": "Typed TypeScript client for the Coronium mobile proxy API (/api/v3).",
   "license": "Apache-2.0",
   "keywords": [
     "coronium",
@@ -9,14 +9,13 @@
     "mobile-proxy",
     "4g",
     "5g",
-    "agent",
-    "ai",
-    "sdk"
+    "sdk",
+    "api-client"
   ],
   "homepage": "https://github.com/bolivian-peru/coronium-ai/tree/main/packages/sdk-ts",
   "repository": {
     "type": "git",
-    "url": "https://github.com/bolivian-peru/coronium-ai.git",
+    "url": "git+https://github.com/bolivian-peru/coronium-ai.git",
     "directory": "packages/sdk-ts"
   },
   "bugs": {
@@ -44,7 +43,7 @@
     "dev": "tsc -p tsconfig.json --watch",
     "clean": "rm -rf dist",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "prepublishOnly": "pnpm clean && pnpm build"
+    "prepublishOnly": "npm run clean && npm run build"
   },
   "publishConfig": {
     "access": "public",

@@ -1,11 +1,11 @@
 // EVM wallet management for the CLI. Holds the user's keypair locally,
 // signs SIWE messages issued by the API, and provides recovery via BIP39
-// mnemonic. Keypair format matches MetaMask / standard EVM conventions —
+// mnemonic. Keypair format matches MetaMask / standard EVM conventions -
 // users can import the same mnemonic into Phantom/MetaMask if they want.
 
-import { mkdir, readFile, writeFile, chmod, unlink, stat } from "node:fs/promises";
+import { mkdir, readFile, writeFile, chmod, unlink } from "node:fs/promises";
 import { homedir } from "node:os";
-import { dirname, join } from "node:path";
+import { join } from "node:path";
 import {
   type HDAccount,
   type PrivateKeyAccount,
@@ -22,6 +22,10 @@ import {
   WrongPassphraseError,
 } from "./wallet-crypt.js";
 import prompts from "prompts";
+
+function isMissingFile(error: unknown): boolean {
+  return error instanceof Error && (error as NodeJS.ErrnoException).code === "ENOENT";
+}
 
 const WALLET_DIR = join(homedir(), ".coronium");
 const WALLET_PATH = join(WALLET_DIR, "wallet.json");
@@ -54,9 +58,9 @@ export async function isWalletEncrypted(): Promise<boolean> {
     const text = await readFile(WALLET_PATH, "utf8");
     const parsed = JSON.parse(text);
     return isEncryptedFile(parsed);
-  } catch (e: any) {
-    if (e?.code === "ENOENT") return false;
-    throw e;
+  } catch (error) {
+    if (isMissingFile(error)) return false;
+    throw error;
   }
 }
 
@@ -64,9 +68,9 @@ export async function loadWallet(opts: LoadOptions = {}): Promise<StoredWallet |
   let text: string;
   try {
     text = await readFile(WALLET_PATH, "utf8");
-  } catch (e: any) {
-    if (e?.code === "ENOENT") return undefined;
-    throw e;
+  } catch (error) {
+    if (isMissingFile(error)) return undefined;
+    throw error;
   }
   const parsed = JSON.parse(text);
 
@@ -74,7 +78,7 @@ export async function loadWallet(opts: LoadOptions = {}): Promise<StoredWallet |
     return parsed as StoredWallet;
   }
 
-  // Encrypted — need a passphrase.
+  // Encrypted - need a passphrase.
   let passphrase = opts.passphrase ?? process.env.CORONIUM_WALLET_PASSPHRASE;
   if (!passphrase) {
     if (opts.noPrompt) {
@@ -112,17 +116,17 @@ export async function encryptWalletAtRest(passphrase: string): Promise<void> {
   const encrypted = encryptJson(parsed, passphrase);
   await writeFile(WALLET_PATH, JSON.stringify(encrypted, null, 2), { mode: 0o600 });
   await chmod(WALLET_PATH, 0o600);
-  // Clean up seed.txt — the mnemonic is now in the encrypted wallet.json.
+  // Clean up seed.txt - the mnemonic is now in the encrypted wallet.json.
   try {
     await unlink(SEED_PATH);
-  } catch (e: any) {
-    if (e?.code !== "ENOENT") throw e;
+  } catch (error) {
+    if (!isMissingFile(error)) throw error;
   }
 }
 
 /** Decrypt-in-place: convert encrypted wallet back to plaintext. Existing
  *  seed.txt is regenerated only if user opts in (we deliberately don't write
- *  it automatically — once you've encrypted, presumably you wanted that). */
+ *  it automatically - once you've encrypted, presumably you wanted that). */
 export async function decryptWalletAtRest(passphrase: string): Promise<StoredWallet> {
   const text = await readFile(WALLET_PATH, "utf8");
   const parsed = JSON.parse(text);
@@ -138,7 +142,7 @@ export async function saveSeedReadOnly(mnemonic: string): Promise<void> {
   await mkdir(WALLET_DIR, { recursive: true, mode: 0o700 });
   await writeFile(
     SEED_PATH,
-    `# Coronium wallet recovery phrase — DO NOT SHARE OR LOSE\n# Same mnemonic works in MetaMask, Phantom, Rabby, etc.\n\n${mnemonic}\n`,
+    `# Coronium wallet recovery phrase - DO NOT SHARE OR LOSE\n# Same mnemonic works in MetaMask, Phantom, Rabby, etc.\n\n${mnemonic}\n`,
     { mode: 0o400 },
   );
   await chmod(SEED_PATH, 0o400);
@@ -205,5 +209,3 @@ function bytesToHex(bytes: Uint8Array): `0x${string}` {
 export const WALLET_FILE = WALLET_PATH;
 export const SEED_FILE = SEED_PATH;
 export { WrongPassphraseError };
-// Suppress unused-import lint
-void stat;

@@ -1,7 +1,7 @@
 {
   "name": "coronium-cli",
-  "version": "0.2.0",
-  "description": "Coronium CLI — buy and manage mobile (4G/5G) proxies from your shell.",
+  "version": "1.0.0",
+  "description": "Coronium CLI: manage dedicated 4G/5G mobile proxies from your shell.",
   "license": "Apache-2.0",
   "keywords": [
     "coronium",
@@ -14,7 +14,7 @@
   "homepage": "https://github.com/bolivian-peru/coronium-ai/tree/main/packages/cli",
   "repository": {
     "type": "git",
-    "url": "https://github.com/bolivian-peru/coronium-ai.git",
+    "url": "git+https://github.com/bolivian-peru/coronium-ai.git",
     "directory": "packages/cli"
   },
   "bugs": {
@@ -38,7 +38,7 @@
     "clean": "rm -rf dist",
     "start": "node dist/index.js",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "prepublishOnly": "pnpm clean && pnpm build"
+    "prepublishOnly": "npm run clean && npm run build"
   },
   "publishConfig": {
     "access": "public",
