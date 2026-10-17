@@ -93,7 +93,8 @@ What the SDK does for you:
 - Sends `max_total_usd` with the order so the API can enforce the cap once it supports it. Until then, the check is client-side and a price change in the seconds between check and charge is still possible.
 - Sends an `Idempotency-Key` (generated, or yours). Identical concurrent calls in one process share one request; reusing a key for a different order throws `idempotency_conflict`.
 - A buy sends only `tariff_id` and `modemCount`; a renewal sends only `modems`, never both.
-- Coupons do not lower the check: the API can charge full price when a coupon is used up, so approve the undiscounted total.
+- Coupons do not lower the check: the API can charge full price when a coupon is used up, so approve the undiscounted total. For a renewal the check uses the quote's `subtotal_usd`.
+- If the order is refused (`outcome: "rejected"`), the same `idempotencyKey` can be sent again. After `outcome: "unknown"` the SDK will not resend it in the same process.
 
 Read the receipt:
 - `status: "delivered"`: 200 with every ordered proxy.
@@ -105,7 +106,7 @@ Read the receipt:
 Every failure is a `CoroniumError` with `status`, `code` (as sent by the API, usually lowercase snake case), `message`, `requestId`, `retryAfterSeconds` and `outcome`:
 
 - `rejected`: nothing changed.
-- `unknown`: a write may have happened (5xx, timeout, network error, or a 2xx without confirmation). Check state before retrying.
+- `unknown`: a write may have happened (5xx, timeout, network error, a 2xx without confirmation, or a 409 `request_outcome_unknown` / `request_in_progress` about an earlier attempt). Check state before retrying.
 - `refunded_not_charged`: the purchase failed and the API refunded it in the same response.
 
 Use `error.isRateLimited` (HTTP 429) rather than matching codes; the API rewrites some rate-limit codes. The SDK never retries a request.

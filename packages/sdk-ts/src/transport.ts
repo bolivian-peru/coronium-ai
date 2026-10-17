@@ -141,8 +141,19 @@ function requestIdOf(response: Response, body: JsonObject): string | undefined {
   return response.headers.get("x-request-id") ?? undefined;
 }
 
+// Idempotency answers that say an earlier attempt with this key or payload may
+// still be applied. The request itself was refused, but the order may exist.
+const EARLIER_ATTEMPT_UNKNOWN_CODES: ReadonlySet<string> = new Set(["request_outcome_unknown", "request_in_progress"]);
+
+function lowerCode(body: JsonObject): string {
+  if (typeof body.code !== "string") return "";
+  return body.code.toLowerCase();
+}
+
 function failureOutcome(route: RouteSpec, status: number, body: JsonObject): RequestOutcome {
   if (body.refunded === true) return "refunded_not_charged";
+  if (body.new_order_created === false) return "rejected";
+  if (route.mutates && EARLIER_ATTEMPT_UNKNOWN_CODES.has(lowerCode(body))) return "unknown";
   if (route.mutates && status >= 500) return "unknown";
   return "rejected";
 }

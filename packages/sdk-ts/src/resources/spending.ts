@@ -38,8 +38,8 @@ interface Order {
   requestedCount: number;
 }
 
-const MIN_KEY_LENGTH: number = 8;
-const MAX_KEY_LENGTH: number = 128;
+// The API accepts 8 to 128 characters from this set and answers 400 otherwise.
+const IDEMPOTENCY_KEY_PATTERN: RegExp = /^[A-Za-z0-9_-]{8,128}$/;
 const MAX_QUANTITY: number = 100;
 const MAX_INTENTS: number = 10_000;
 
@@ -77,8 +77,11 @@ function assertQuantity(quantity: number): void {
 
 function resolveIdempotencyKey(provided: string | undefined): string {
   if (provided === undefined) return `cor-${randomUUID()}`;
-  if (provided.length >= MIN_KEY_LENGTH && provided.length <= MAX_KEY_LENGTH) return provided;
-  throw new CoroniumError({ code: "invalid_argument", message: "idempotencyKey must be 8 to 128 characters." });
+  if (IDEMPOTENCY_KEY_PATTERN.test(provided)) return provided;
+  throw new CoroniumError({
+    code: "invalid_argument",
+    message: "idempotencyKey must be 8 to 128 characters: letters, digits, '_' or '-'.",
+  });
 }
 
 /** Refuse only when the fresh total is higher than approved; a lower price is fine. */
@@ -89,6 +92,28 @@ function assertWithinApproved(quotedTotalUsd: number, approvedTotalUsd: number):
     message: `The current total is $${quotedTotalUsd.toFixed(2)}, above the approved $${approvedTotalUsd.toFixed(2)}. Nothing was charged. Show the new total and ask again.`,
     suggestedAction: "requote_and_confirm",
   });
+}
+
+/** Mirror the API's own rounding: plan price x quantity, rounded to cents once. */
+function purchaseTotalUsd(priceUsd: number, quantity: number): number {
+  return toCents(priceUsd * quantity) / 100;
+}
+
+/**
+ * The highest amount a renewal can be charged. The quote applies a coupon, but
+ * the charge can ignore a coupon this account has already used, so the
+ * approved total is checked against the undiscounted subtotal.
+ */
+function renewalCeilingUsd(quote: RenewalQuote): number {
+  const subtotal: number | null = numberOrNull(quote.subtotal_usd);
+  if (subtotal === null) return quote.total_usd;
+  return Math.max(subtotal, quote.total_usd);
+}
+
+/** A refusal released the key on the server too, so the same key may be sent again. */
+function isRetryableRefusal(error: unknown): boolean {
+  if (!(error instanceof CoroniumError)) return false;
+  return error.outcome === "rejected" || error.outcome === "refunded_not_charged";
 }
 
 function buyRoute(funding: FundingSource): RouteSpec {
@@ -175,7 +200,7 @@ export class SpendingResource {
         suggestedAction: "list_tariffs",
       });
     }
-    const totalUsd: number = toCents(tariff.price) * quantity / 100;
+    const totalUsd: number = purchaseTotalUsd(tariff.price, quantity);
     return { tariff, quantity, totalUsd };
   }
 
@@ -219,6 +244,7 @@ export class SpendingResource {
    *
    * Requires `allowSpending: true` and `expectedTotalUsd`, checked against a fresh
    * renewal quote that must cover every proxy for exactly the requested days.
+   * The check uses the undiscounted subtotal, so approve the total before coupons.
    */
   async renew(input: RenewInput): Promise<SpendReceipt> {
     assertSpendingAllowed(this.allowSpending);
@@ -227,7 +253,8 @@ export class SpendingResource {
     assertRenewalItems(input.items);
     const idempotencyKey: string = resolveIdempotencyKey(input.idempotencyKey);
     const quote: RenewalQuote = await this.catalog.renewalQuote(input.items, input.coupon);
-    assertWithinApproved(quote.total_usd, input.expectedTotalUsd);
+    const ceilingUsd: number = renewalCeilingUsd(quote);
+    assertWithinApproved(ceilingUsd, input.expectedTotalUsd);
     // A renewal never sends tariff_id: with both present the API would buy.
     const body: Record<string, unknown> = {
       modems: renewalModems(input.items),
@@ -240,7 +267,7 @@ export class SpendingResource {
       funding: input.funding,
       idempotencyKey,
       approvedTotalUsd: input.expectedTotalUsd,
-      quotedTotalUsd: quote.total_usd,
+      quotedTotalUsd: ceilingUsd,
       requestedCount: input.items.length,
     });
   }
@@ -265,6 +292,7 @@ export class SpendingResource {
     } else {
       result = this.send(order);
       this.remember(intentKey, { fingerprint, result });
+      result.catch((error: unknown): void => this.forgetRefused(intentKey, result, error));
     }
     return toReceipt(order, await result);
   }
@@ -275,6 +303,13 @@ export class SpendingResource {
       idempotencyKey: order.idempotencyKey,
       timeoutMs: this.purchaseTimeoutMs,
     });
+  }
+
+  // Keep unknown outcomes cached so a retry in this process never sends a second
+  // order; drop clear refusals so the caller can retry with the same key.
+  private forgetRefused(intentKey: string, result: Promise<CallResult<unknown>>, error: unknown): void {
+    if (!isRetryableRefusal(error)) return;
+    if (this.intents.get(intentKey)?.result === result) this.intents.delete(intentKey);
   }
 
   private remember(intentKey: string, intent: Intent): void {

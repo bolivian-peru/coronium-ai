@@ -131,6 +131,9 @@ export async function renewCommand(rawItems: string[], options: SpendOptions): P
   if (!isJson(options)) {
     printRenewalQuote(quote);
     field("pay from", FUNDING_LABEL[funding]);
+    if (quote.discount_usd > 0) {
+      console.log(kleur.dim("  The charge can skip a coupon you already used; --max-total must cover the total before the discount."));
+    }
   }
   const maxTotal: number = await assertSpendGates(options);
   const receipt: SpendReceipt = await client.spending.renew({

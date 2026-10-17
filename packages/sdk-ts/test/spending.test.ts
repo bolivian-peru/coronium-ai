@@ -148,6 +148,60 @@ describe("buy", () => {
     expect(paymentRequests()).toHaveLength(1);
   });
 
+  it("refuses an idempotency key the API would reject, sending nothing", async () => {
+    const error: CoroniumError = await captureError(
+      client.spending.buy({ tariffId: TARIFF_ID, quantity: 1, funding: "account_credit", expectedTotalUsd: 49, idempotencyKey: "order 0004!" }),
+    );
+    expect(error.code).toBe("invalid_argument");
+    expect(paymentRequests()).toHaveLength(0);
+  });
+
+  it("lets the same key be sent again after a clear refusal", async () => {
+    server.on("POST /payment/buy-with-account-credit", () => ({
+      status: 400,
+      body: { error: "Not enough credit", code: "INSUFFICIENT_CREDIT", available_usd: 10, required_usd: 49 },
+    }));
+    const input = { tariffId: TARIFF_ID, quantity: 1, funding: "account_credit" as const, expectedTotalUsd: 49, idempotencyKey: "order-0005" };
+    const error: CoroniumError = await captureError(client.spending.buy(input));
+    expect(error.outcome).toBe("rejected");
+    server.on("POST /payment/buy-with-account-credit", () => delivered(1));
+    const receipt = await client.spending.buy(input);
+    expect(receipt.status).toBe("delivered");
+    expect(paymentRequests()).toHaveLength(2);
+  });
+
+  it("never resends a key whose outcome is unknown in the same process", async () => {
+    server.on("POST /payment/buy-with-account-credit", () => ({ status: 500, body: { error: "provisioning failed" } }));
+    const input = { tariffId: TARIFF_ID, quantity: 1, funding: "account_credit" as const, expectedTotalUsd: 49, idempotencyKey: "order-0006" };
+    await captureError(client.spending.buy(input));
+    server.on("POST /payment/buy-with-account-credit", () => delivered(1));
+    const again: CoroniumError = await captureError(client.spending.buy(input));
+    expect(again.outcome).toBe("unknown");
+    expect(paymentRequests()).toHaveLength(1);
+  });
+
+  it("maps a 409 request_outcome_unknown to outcome unknown", async () => {
+    server.on("POST /payment/buy-with-account-credit", () => ({
+      status: 409,
+      body: { error: "An earlier request with this key has an unknown outcome", code: "request_outcome_unknown" },
+    }));
+    const error: CoroniumError = await captureError(
+      client.spending.buy({ tariffId: TARIFF_ID, quantity: 1, funding: "account_credit", expectedTotalUsd: 49 }),
+    );
+    expect(error.outcome).toBe("unknown");
+  });
+
+  it("maps new_order_created:false to outcome rejected even on a 503", async () => {
+    server.on("POST /payment/buy-with-account-credit", () => ({
+      status: 503,
+      body: { error: "Payment service unavailable", code: "PAYMENT_SERVICE_UNAVAILABLE", new_order_created: false },
+    }));
+    const error: CoroniumError = await captureError(
+      client.spending.buy({ tariffId: TARIFF_ID, quantity: 1, funding: "account_credit", expectedTotalUsd: 49 }),
+    );
+    expect(error.outcome).toBe("rejected");
+  });
+
   it("refuses the same key for a different order", async () => {
     server.on("POST /payment/buy-with-account-credit", () => delivered(1));
     await client.spending.buy({ tariffId: TARIFF_ID, quantity: 1, funding: "account_credit", expectedTotalUsd: 98, idempotencyKey: "order-0003" });
@@ -183,6 +237,29 @@ describe("renew", () => {
     expect(receipt.status).toBe("delivered");
     const [payment] = paymentRequests();
     expect(payment?.body).toEqual({ modems: [{ modem_id: "m1", days: 7 }], max_total_usd: 49 });
+  });
+
+  it("checks a coupon renewal against the undiscounted subtotal, because the charge can skip the coupon", async () => {
+    server.on("POST /payment/renewal-quote", () => ({
+      body: {
+        currency: "USD",
+        subtotal_usd: 49,
+        discount_usd: 9.8,
+        total_usd: 39.2,
+        coupon: { name: "SAVE20", value: "20" },
+        line_items: [{ modem_id: "m1", days: 7, line_total_usd: 49 }],
+      },
+    }));
+    const error: CoroniumError = await captureError(
+      client.spending.renew({ items: [{ modemId: "m1", days: 7 }], funding: "account_credit", expectedTotalUsd: 39.2, coupon: "SAVE20" }),
+    );
+    expect(error.code).toBe("price_changed");
+    expect(paymentRequests()).toHaveLength(0);
+
+    server.on("POST /payment/renew-with-account-credit", () => delivered(1));
+    const receipt = await client.spending.renew({ items: [{ modemId: "m1", days: 7 }], funding: "account_credit", expectedTotalUsd: 49, coupon: "SAVE20" });
+    expect(receipt.quotedTotalUsd).toBe(49);
+    expect(paymentRequests()[0]?.body).toEqual({ modems: [{ modem_id: "m1", days: 7 }], max_total_usd: 49, coupon: { coupon_name: "SAVE20" } });
   });
 
   it("refuses when the renewal quote is above the approved total", async () => {
