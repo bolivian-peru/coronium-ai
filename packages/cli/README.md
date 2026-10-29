@@ -94,6 +94,39 @@ coronium spending off
 
 `--funding` is required: `account_credit` (USD credit) or `btc` (BTC wallet at the live rate). Cards are not supported. If the live total is above `--max-total`, the order is refused with `price_changed` and nothing is charged. Every order prints its idempotency key; pass it back with `--key` only to reconcile the same order.
 
+## Recipe: your first proxy on the 24-hour plan
+
+The 24-hour plan is the way to test a line before a longer one. The CLI spends money that is already on the account. It cannot add money: a person tops up account credit at dashboard.coronium.io first (or sends BTC to the address from `coronium balance --crypto` and uses `--funding btc`).
+
+```bash
+# 1. Store the token a person created at dashboard.coronium.io, Account, API Access
+coronium login --token <token>
+coronium status                          # api and token should both show ok
+
+# 2. Check what you can spend
+coronium balance
+
+# 3. Pick a plan whose period reads "1 day" and note its id
+coronium tariffs --country US
+
+# 4. Price it and show the total to the person who pays
+coronium quote buy --tariff <id> --count 1
+
+# 5. Buy only after they approve that exact total
+coronium spending on
+coronium buy --tariff <id> --count 1 --funding account_credit --max-total <approved total> --yes
+coronium spending off
+
+# 6. Get the HTTP and SOCKS5 URLs and check the line answers
+coronium proxy list
+coronium proxy test <proxy id>
+```
+
+- If the live total is above `--max-total`, nothing is charged and the order is refused with `price_changed`. Quote again and ask again.
+- On exit code `3` the order may have gone through. Run `coronium proxy list` or `coronium payment <id>` before trying again, and do not order twice.
+- Coupons: `buy` takes `--coupon <code>`, but this version checks `--max-total` against the plan price before the discount, so `--max-total` must cover the undiscounted total. A coupon that is missing or expired is charged at the plan price, up to that cap.
+- When the test day is over, renew the line with `coronium renew <proxy id>:<days>` (same three gates) or buy a longer plan.
+
 ## Exit codes
 
 - `0` success
