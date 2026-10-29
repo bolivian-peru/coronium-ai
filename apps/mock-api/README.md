@@ -12,7 +12,7 @@ Then in another shell:
 
 ```bash
 export CORONIUM_BASE_URL=http://127.0.0.1:5050/v1
-coronium init                                   # mints a fake key, $0.50 trial credit
+coronium init                                   # mints a fake key with mock credit
 coronium proxy get --country US --type 5g       # mints a fake proxy
 coronium proxy rotate <id>                      # ~5% chance of CARRIER_NO_OP for testing
 coronium proxy release <id>

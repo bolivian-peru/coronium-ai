@@ -1,17 +1,15 @@
-# coronium-api (reference Fastify implementation — NOT the production backend)
+# coronium-api (reference Fastify implementation - RETIRED)
 
-> **Status as of 2026-04-30:** the production wallet-bound signup flow runs **directly on `https://api.coronium.io/api/v3`** — Coronium's main production API. This folder is preserved as a reference implementation for forks who want to host their own backend behind the same wire format.
+> **RETIRED - not the Coronium API.** This is a reference server for an early 0.x design. The `api.coronium.ai` host it mentions was never deployed, and the signup credit, hourly pricing and routes it implements are not how Coronium works. Please don't integrate against it.
 >
-> If you're integrating against Coronium production:
-> - Base URL: `https://api.coronium.io/api/v3`
-> - Signup: `POST /wallet-challenge` + `POST /wallet-signup` (SIWE)
-> - The CLI (`coronium init`), MCP (`coronium-mcp`), and SDK (`coronium-sdk`) all default to that URL — no setup needed.
->
-> The original gateway plan (this server forwarding to `cor-api-v1`) was collapsed: the wallet-auth routes were mounted directly on the main API instead, removing an entire deployment surface.
+> For the live service:
+> - Base URL: `https://api.coronium.io/api/v3`, Bearer token from dashboard.coronium.io (Account, then API Access)
+> - API reference: https://api.coronium.io/api-docs/
+> - MCP server: `npx -y coronium-proxy-mcp`. CLI: `coronium-cli`. SDK: `coronium-sdk`.
 
 ---
 
-Reference Fastify server implementing [`coronium-ai/openapi.yaml`](../../openapi.yaml). Originally intended for `api.coronium.ai` deployment; now kept as a self-host template. Translates the agent-native 7-verb API into calls against an upstream Express monolith (modems, payments, ProxySmart).
+Reference Fastify server implementing [`coronium-ai/openapi.yaml`](../../openapi.yaml). Originally intended for `api.coronium.ai` deployment; now kept as a self-host template. Translates the agent-native 7-verb API into calls against an upstream Express monolith (modems, payments, modem control).
 
 ## Architecture
 
@@ -139,7 +137,7 @@ Wire `/ready` to your load balancer. `/health` is for `docker healthcheck` / sys
 ## What this server does NOT do (yet)
 
 - **Stripe / CoinGate / x402 payment ingestion** — handled upstream by cor-api-v1's existing webhook listeners. Balance is read from there.
-- **Proxysmart driver calls** — handled upstream.
+- **Modem control calls** - handled upstream.
 - **Modem provisioning** — handled upstream.
 - **Email / receipts** — handled upstream.
 

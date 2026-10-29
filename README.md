@@ -68,7 +68,8 @@ Point the CLI at a local server with `CORONIUM_BASE_URL=http://127.0.0.1:<port>/
 ## Other folders
 
 - `skills/`: Claude skills for embedding wallet sign-up and chat in a website.
-- `apps/api`, `apps/mock-api`, `apps/web`: the reference server, mock and site for the earlier 0.x design. They are not used by the 1.0 packages and are kept for reference only.
+- `apps/api`, `apps/mock-api`: the reference server and mock for the earlier 0.x design. They are not used by the 1.0 packages and are kept for reference only. They do not describe the live API, its prices or how to sign up.
+- `apps/web`: retired. The 0.x site was removed.
 
 ## Releasing
 
