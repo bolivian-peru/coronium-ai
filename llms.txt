@@ -14,8 +14,8 @@ Dedicated 4G/5G mobile proxies on real carrier SIMs, managed through the REST AP
 - GET /account: account credit and BTC/USDT balances.
 - POST /signup {login, password, name, purpose?}, POST /get-token {login, password}, then GET https://api.coronium.io/api/v1/account/api-token with that session token: an agent opens its own account and gets the 365-day API token ({token, expiresAt}). Disposable and reserved email domains are refused; the account starts empty.
 - GET /account/crypto-balance: USDT (TRC-20) and BTC deposit addresses and balances, plus account credit. Creates missing deposit wallets.
-- POST /account/balance/convert: move the account's own confirmed USDT and/or BTC into USD account credit, one way. Body {coin: usdt, btc or all, amount_usd?, dry_run?}; a real move needs an Idempotency-Key.
-- GET /account/card-list, POST /payment/buy-with-card/:card_id, POST /payment/renew-with-card/:card_id: saved cards (added by a person in the dashboard; the API cannot add one).
+- POST /account/balance/convert: move the account's own confirmed USDT and/or BTC into USD account credit, one way. Body {coin: usdt, btc or all, amount_usd?, dry_run?}; a real move needs an Idempotency-Key of 8-128 letters, digits, "-" or "_" (a key with "." or ":" answers 400 "Invalid Idempotency-Key format").
+- GET /account/card-list, POST /payment/buy-with-card/:card_id, POST /payment/renew-with-card/:card_id: saved cards (a person adds the card in the dashboard).
 - GET /account/proxies: owned proxies with credentials.
 - POST /modems/:id/restart: rotate the IP. 200 with rotated:true is done, 202 with pending:true is still running (poll GET /modems/:id/rotation-status), 200 with rotated:false means the IP did not change.
 - POST /modems/:id/replace: swap for another modem (new host and credentials, 2 per 24 hours).
