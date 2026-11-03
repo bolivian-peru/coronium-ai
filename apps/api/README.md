@@ -5,7 +5,7 @@
 > For the live service:
 > - Base URL: `https://api.coronium.io/api/v3`, Bearer token from dashboard.coronium.io (Account, then API Access)
 > - API reference: https://api.coronium.io/api-docs/
-> - MCP server: `npx -y coronium-proxy-mcp`. CLI: `coronium-cli`. SDK: `coronium-sdk`.
+> - MCP server: `npx -y coronium-proxy-mcp@2.4.2`, or hosted at `https://api.coronium.io/mcp`. CLI: `coronium-cli`. SDK: `coronium-sdk`.
 
 ---
 

@@ -4,6 +4,16 @@ All notable changes to the `coronium-ai` packages.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Pre-1.0, minor versions may break. Stable releases are on the `latest` npm tag; pre-release builds may appear on the `beta` / `alpha` tags.
 
+## [Unreleased]
+
+### Docs (3 Nov 2026, no package release)
+
+- MCP pointer: `coronium-proxy-mcp@2.4.2` is pinned in README.md, AGENTS.md, llms.txt, packages/mcp/README.md and apps/api/README.md, with the hosted servers `https://api.coronium.io/mcp` (OAuth sign-in, 22 tools, never spends) and `https://api.coronium.io/mcp/buyer` (15 tools, 20 when purchases are allowed).
+- Agents without a browser: README.md, AGENTS.md, llms.txt and the SDK and CLI READMEs show how an agent opens its own account (`POST /api/v3/signup`, `POST /api/v3/get-token`, `GET https://api.coronium.io/api/v1/account/api-token`) or uses `coronium_create_account` in `coronium-proxy-mcp`.
+- Funding: a confirmed USDT or BTC deposit moves into account credit with `POST /api/v3/account/balance/convert` (live since 3 Nov 2026) or `coronium_convert_crypto_to_credit`. The SDK and CLI 1.0 have no method for it yet.
+- SDK README: the API now enforces `max_total_usd` itself (`409 price_changed`, nothing charged); the line that said it did not was out of date.
+- llms.txt and README.md: an unknown `/api/` path answers a JSON 404 `not_found` since 17 Oct 2026, not a redirect to an HTML page.
+
 ## [1.0.0] - 2026-10-17
 
 ### coronium-sdk 1.0.0 and coronium-cli 1.0.0: rewritten against the real API

@@ -1,10 +1,10 @@
 # Coronium
 
-Dedicated 4G/5G mobile proxies on real carrier SIMs, managed through the REST API at https://api.coronium.io/api/v3 (Bearer token from dashboard.coronium.io, Account, API Access).
+Dedicated 4G/5G mobile proxies on real carrier SIMs, managed through the REST API at https://api.coronium.io/api/v3 (Bearer token from dashboard.coronium.io, Account, API Access, or created by an agent through the API, see below).
 
 ## Interfaces
 
-- MCP server: `npx -y coronium-proxy-mcp` (env CORONIUM_API_TOKEN). `coronium-mcp` is deprecated.
+- MCP server: `npx -y coronium-proxy-mcp@2.4.2` (env CORONIUM_API_TOKEN), https://github.com/coroniumio/coronium-proxy-mcp. Hosted: https://api.coronium.io/mcp (OAuth, 22 tools, never spends) and https://api.coronium.io/mcp/buyer (15 tools, 20 when purchases are allowed). Without a token and with CORONIUM_TOOL_PROFILE=buyer, `coronium_create_account` opens an account. `coronium-mcp` is deprecated.
 - TypeScript SDK: `npm install coronium-sdk` (https://github.com/bolivian-peru/coronium-ai/tree/main/packages/sdk-ts)
 - CLI: `npm install -g coronium-cli` (https://github.com/bolivian-peru/coronium-ai/tree/main/packages/cli)
 
@@ -12,6 +12,10 @@ Dedicated 4G/5G mobile proxies on real carrier SIMs, managed through the REST AP
 
 - GET /countries, GET /tariffs/available, GET /free-modems: public catalog and stock.
 - GET /account: account credit and BTC/USDT balances.
+- POST /signup {login, password, name, purpose?}, POST /get-token {login, password}, then GET https://api.coronium.io/api/v1/account/api-token with that session token: an agent opens its own account and gets the 365-day API token ({token, expiresAt}). Disposable and reserved email domains are refused; the account starts empty.
+- GET /account/crypto-balance: USDT (TRC-20) and BTC deposit addresses and balances, plus account credit. Creates missing deposit wallets.
+- POST /account/balance/convert: move the account's own confirmed USDT and/or BTC into USD account credit, one way. Body {coin: usdt, btc or all, amount_usd?, dry_run?}; a real move needs an Idempotency-Key of 8-128 letters, digits, "-" or "_" (a key with "." or ":" answers 400 "Invalid Idempotency-Key format").
+- GET /account/card-list, POST /payment/buy-with-card/:card_id, POST /payment/renew-with-card/:card_id: saved cards (a person adds the card in the dashboard).
 - GET /account/proxies: owned proxies with credentials.
 - POST /modems/:id/restart: rotate the IP. 200 with rotated:true is done, 202 with pending:true is still running (poll GET /modems/:id/rotation-status), 200 with rotated:false means the IP did not change.
 - POST /modems/:id/replace: swap for another modem (new host and credentials, 2 per 24 hours).
@@ -23,7 +27,7 @@ Dedicated 4G/5G mobile proxies on real carrier SIMs, managed through the REST AP
 
 ## Behaviour to know
 
-- An authenticated request to a path that does not exist is answered with a redirect to an HTML page. Do not follow redirects; treat a 3xx as "route not found".
+- A path that does not exist answers a JSON 404 with code "not_found" (until 17 Oct 2026 it was a redirect to an HTML page). Do not follow redirects; treat a 3xx as "route not found".
 - Errors are JSON: {error, code, suggested_action, request_id}. Detect rate limits by HTTP 429 and Retry-After, not by code.
 - Never retry a payment or a write automatically after a 5xx or timeout; check state first.
 
