@@ -12,7 +12,7 @@ A typed TypeScript SDK and a command-line tool for the [Coronium](https://www.co
 
 ## Looking for the MCP server?
 
-Use **[`coronium-proxy-mcp`](https://github.com/coroniumio/coronium-proxy-mcp)**, the maintained Coronium MCP server: `npx -y coronium-proxy-mcp@2.4.2` locally, or the hosted servers `https://api.coronium.io/mcp` (OAuth sign-in, 22 tools, never spends) and `https://api.coronium.io/mcp/buyer` (15 tools, 20 when purchases are allowed). No account yet? Start it with no `CORONIUM_API_TOKEN` and `CORONIUM_TOOL_PROFILE=buyer`: `coronium_create_account` signs up and issues the API token, and `coronium_convert_crypto_to_credit` moves a confirmed USDT or BTC deposit into account credit ([Agents without a browser](https://github.com/coroniumio/coronium-proxy-mcp#agents-without-a-browser)).
+Use **[`coronium-proxy-mcp`](https://github.com/coroniumio/coronium-proxy-mcp)**, the maintained Coronium MCP server: `npx -y coronium-proxy-mcp@2.4.3` locally, or the hosted servers `https://api.coronium.io/mcp` (OAuth sign-in, 22 tools, never spends) and `https://api.coronium.io/mcp/buyer` (15 tools, 20 when purchases are allowed). No account yet? Start it with no `CORONIUM_API_TOKEN` and `CORONIUM_TOOL_PROFILE=buyer`: `coronium_create_account` signs up and issues the API token, and `coronium_convert_crypto_to_credit` moves a confirmed USDT or BTC deposit into account credit ([Agents without a browser](https://github.com/coroniumio/coronium-proxy-mcp#agents-without-a-browser)).
 
 `coronium-mcp` from this repo is **deprecated**. Version 0.2.0 and earlier called API routes that never existed on `api.coronium.io` and could report false results to an agent. Its source has been removed here; see [packages/mcp/README.md](./packages/mcp/README.md).
 

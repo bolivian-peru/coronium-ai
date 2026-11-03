@@ -3,7 +3,7 @@
 **Use [`coronium-proxy-mcp`](https://github.com/coroniumio/coronium-proxy-mcp) instead:**
 
 ```bash
-claude mcp add coronium -- npx -y coronium-proxy-mcp@2.4.2
+claude mcp add coronium -- npx -y coronium-proxy-mcp@2.4.3
 ```
 
 Or connect the hosted server, nothing to install: `https://api.coronium.io/mcp` (OAuth sign-in, never spends) or `https://api.coronium.io/mcp/buyer` (can buy once you allow purchases).
