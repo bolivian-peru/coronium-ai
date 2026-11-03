@@ -5,7 +5,7 @@ Instructions for AI coding agents working in this repository, and for agents tha
 ## Using Coronium from an agent
 
 - **MCP hosts** (Claude Code, Claude Desktop, Cursor, Windsurf): use `coronium-proxy-mcp`, not `coronium-mcp` (deprecated).
-  `claude mcp add coronium -- npx -y coronium-proxy-mcp@2.4.2`, with `CORONIUM_API_TOKEN` in the server env. Hosted, nothing to install: `https://api.coronium.io/mcp` (OAuth sign-in, 22 tools, never spends) or `https://api.coronium.io/mcp/buyer` (15 tools, 20 when purchases are allowed).
+  `claude mcp add coronium -- npx -y coronium-proxy-mcp@2.4.3`, with `CORONIUM_API_TOKEN` in the server env. Hosted, nothing to install: `https://api.coronium.io/mcp` (OAuth sign-in, 22 tools, never spends) or `https://api.coronium.io/mcp/buyer` (15 tools, 20 when purchases are allowed).
 - **Code**: `npm install coronium-sdk`, then `new Coronium({ token })`.
 - **Shell**: `npm install -g coronium-cli`, then `coronium proxy list`.
 - **REST**: `https://api.coronium.io/api/v3`, `Authorization: Bearer <token>`.

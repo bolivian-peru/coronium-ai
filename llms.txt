@@ -4,7 +4,7 @@ Dedicated 4G/5G mobile proxies on real carrier SIMs, managed through the REST AP
 
 ## Interfaces
 
-- MCP server: `npx -y coronium-proxy-mcp@2.4.2` (env CORONIUM_API_TOKEN), https://github.com/coroniumio/coronium-proxy-mcp. Hosted: https://api.coronium.io/mcp (OAuth, 22 tools, never spends) and https://api.coronium.io/mcp/buyer (15 tools, 20 when purchases are allowed). Without a token and with CORONIUM_TOOL_PROFILE=buyer, `coronium_create_account` opens an account. `coronium-mcp` is deprecated.
+- MCP server: `npx -y coronium-proxy-mcp@2.4.3` (env CORONIUM_API_TOKEN), https://github.com/coroniumio/coronium-proxy-mcp. Hosted: https://api.coronium.io/mcp (OAuth, 22 tools, never spends) and https://api.coronium.io/mcp/buyer (15 tools, 20 when purchases are allowed). Without a token and with CORONIUM_TOOL_PROFILE=buyer, `coronium_create_account` opens an account. `coronium-mcp` is deprecated.
 - TypeScript SDK: `npm install coronium-sdk` (https://github.com/bolivian-peru/coronium-ai/tree/main/packages/sdk-ts)
 - CLI: `npm install -g coronium-cli` (https://github.com/bolivian-peru/coronium-ai/tree/main/packages/cli)
 
