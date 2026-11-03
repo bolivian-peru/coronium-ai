@@ -5,12 +5,16 @@ Instructions for AI coding agents working in this repository, and for agents tha
 ## Using Coronium from an agent
 
 - **MCP hosts** (Claude Code, Claude Desktop, Cursor, Windsurf): use `coronium-proxy-mcp`, not `coronium-mcp` (deprecated).
-  `claude mcp add coronium -- npx -y coronium-proxy-mcp`, with `CORONIUM_API_TOKEN` in the server env.
+  `claude mcp add coronium -- npx -y coronium-proxy-mcp@2.4.2`, with `CORONIUM_API_TOKEN` in the server env. Hosted, nothing to install: `https://api.coronium.io/mcp` (OAuth sign-in, 22 tools, never spends) or `https://api.coronium.io/mcp/buyer` (15 tools, 20 when purchases are allowed).
 - **Code**: `npm install coronium-sdk`, then `new Coronium({ token })`.
 - **Shell**: `npm install -g coronium-cli`, then `coronium proxy list`.
 - **REST**: `https://api.coronium.io/api/v3`, `Authorization: Bearer <token>`.
 
 The token comes from dashboard.coronium.io (Account, API Access). Never ask a user to paste it into a chat.
+
+No account yet? An agent can create one without a browser: `coronium_create_account` in `coronium-proxy-mcp` (started with no token and `CORONIUM_TOOL_PROFILE=buyer`), or `POST https://api.coronium.io/api/v3/signup` `{login, password, name, purpose?}`, `POST /api/v3/get-token` `{login, password}`, then `GET https://api.coronium.io/api/v1/account/api-token` with that session token as Bearer, which returns the 365-day token. The account starts empty.
+
+Funding: account credit is added in the dashboard. A confirmed USDT (TRC-20) or BTC deposit to the addresses from `GET /api/v3/account/crypto-balance` moves into account credit with `POST /api/v3/account/balance/convert` (preview with `dry_run: true`; the real move needs an `Idempotency-Key`) or `coronium_convert_crypto_to_credit`. The SDK and CLI 1.0 have no method for it.
 
 ## Rules for agents
 

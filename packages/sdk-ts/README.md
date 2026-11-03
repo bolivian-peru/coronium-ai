@@ -19,7 +19,7 @@ for (const proxy of await coronium.proxies.list()) {
 }
 ```
 
-Create the token in the dashboard: dashboard.coronium.io, Account, API Access. The public catalog (`catalog.countries`, `catalog.tariffs`, `catalog.availableTariffs`, `catalog.stock`) works without a token.
+Create the token in the dashboard: dashboard.coronium.io, Account, API Access. An agent without a browser can also get one: `POST /api/v3/signup`, `POST /api/v3/get-token`, then `GET https://api.coronium.io/api/v1/account/api-token` with that session token (365 days). The public catalog (`catalog.countries`, `catalog.tariffs`, `catalog.availableTariffs`, `catalog.stock`) works without a token.
 
 ## Upgrading from 0.x
 
@@ -90,7 +90,7 @@ const receipt = await coronium.spending.buy({
 
 What the SDK does for you:
 - Re-reads the live price and stock right before sending. A total above `expectedTotalUsd` throws `price_changed` and nothing is sent. A lower price is accepted.
-- Sends `max_total_usd` with the order so the API can enforce the cap once it supports it. Until then, the check is client-side and a price change in the seconds between check and charge is still possible.
+- Sends `max_total_usd` with the order, and the API enforces it too: a server total above it is refused with `409 price_changed` and nothing is charged.
 - Sends an `Idempotency-Key` (generated, or yours). Identical concurrent calls in one process share one request; reusing a key for a different order throws `idempotency_conflict`.
 - A buy sends only `tariff_id` and `modemCount`; a renewal sends only `modems`, never both.
 - Coupons do not lower the check: the API can charge full price when a coupon is used up, so approve the undiscounted total. For a renewal the check uses the quote's `subtotal_usd`.

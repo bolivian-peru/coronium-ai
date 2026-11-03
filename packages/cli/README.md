@@ -36,6 +36,8 @@ coronium wallet:encrypt                  # encrypt ~/.coronium/wallet.json at re
 
 `key:rotate` issues a new token but does not revoke earlier ones.
 
+No account yet? An agent can create one without a browser: `POST https://api.coronium.io/api/v3/signup` `{login, password, name, purpose?}`, `POST https://api.coronium.io/api/v3/get-token` `{login, password}`, then `GET https://api.coronium.io/api/v1/account/api-token` with that session token as Bearer returns the 365-day token for `coronium login --token`. The account starts empty.
+
 ## Commands
 
 Add `--json` to any command for machine-readable output.
@@ -96,7 +98,7 @@ coronium spending off
 
 ## Recipe: your first proxy on the 24-hour plan
 
-The 24-hour plan is the way to test a line before a longer one. The CLI spends money that is already on the account. It cannot add money: a person tops up account credit at dashboard.coronium.io first (or sends BTC to the address from `coronium balance --crypto` and uses `--funding btc`).
+The 24-hour plan is the way to test a line before a longer one. The CLI spends money that is already on the account. It cannot add money: a person tops up account credit at dashboard.coronium.io first (or sends BTC to the address from `coronium balance --crypto` and uses `--funding btc`). A confirmed USDT or BTC deposit can also be moved into account credit with `POST /api/v3/account/balance/convert` or `coronium-proxy-mcp`; this CLI version has no command for it.
 
 ```bash
 # 1. Store the token a person created at dashboard.coronium.io, Account, API Access

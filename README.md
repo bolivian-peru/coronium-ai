@@ -12,7 +12,7 @@ A typed TypeScript SDK and a command-line tool for the [Coronium](https://www.co
 
 ## Looking for the MCP server?
 
-Use **[`coronium-proxy-mcp`](https://github.com/coroniumio/coronium-proxy-mcp)** (`npx -y coronium-proxy-mcp`). It is the maintained Coronium MCP server.
+Use **[`coronium-proxy-mcp`](https://github.com/coroniumio/coronium-proxy-mcp)**, the maintained Coronium MCP server: `npx -y coronium-proxy-mcp@2.4.2` locally, or the hosted servers `https://api.coronium.io/mcp` (OAuth sign-in, 22 tools, never spends) and `https://api.coronium.io/mcp/buyer` (15 tools, 20 when purchases are allowed). No account yet? Start it with no `CORONIUM_API_TOKEN` and `CORONIUM_TOOL_PROFILE=buyer`: `coronium_create_account` signs up and issues the API token, and `coronium_convert_crypto_to_credit` moves a confirmed USDT or BTC deposit into account credit ([Agents without a browser](https://github.com/coroniumio/coronium-proxy-mcp#agents-without-a-browser)).
 
 `coronium-mcp` from this repo is **deprecated**. Version 0.2.0 and earlier called API routes that never existed on `api.coronium.io` and could report false results to an agent. Its source has been removed here; see [packages/mcp/README.md](./packages/mcp/README.md).
 
@@ -46,12 +46,12 @@ Buying and renewing charge real money, so both packages keep them switched off u
 - SDK: `new Coronium({ token, allowSpending: true })`, and every `spending.buy` or `spending.renew` call needs `expectedTotalUsd`, the total the user approved. A fresh quote above it is refused with `price_changed` before anything is sent.
 - CLI: `coronium spending on` (or `CORONIUM_ALLOW_SPENDING=1`), and every `buy` or `renew` prints the price and still needs `--max-total <usd>` and `--yes`.
 
-Cards are not supported by either package. Purchases use account credit or the BTC wallet.
+Cards are not supported by either package. Purchases use account credit or the BTC wallet. Saved cards, moving USDT or BTC into account credit (`POST /api/v3/account/balance/convert`) and account sign-up without a browser work through the REST API and `coronium-proxy-mcp`.
 
 ## How 1.0 stays in sync with the API
 
 - **Route fixture.** [`packages/sdk-ts/test/fixtures/v3-routes.json`](./packages/sdk-ts/test/fixtures/v3-routes.json) lists every public `/api/v3` route (method, path, auth, request and response field names). A test fails if any SDK call targets a route that is not in it.
-- **Loopback fixture server.** Behaviour tests for the SDK and CLI run against a local replica that answers the way production does, including the redirect-to-HTML that production sends for unknown routes.
+- **Loopback fixture server.** Behaviour tests for the SDK and CLI run against a local replica that answers the way production does, including the redirect-to-HTML that production sent for unknown routes until 17 Oct 2026 (unknown `/api/` paths now answer a JSON 404, `code: "not_found"`).
 - **Strict transport.** No redirects are followed, a non-JSON 2xx is an error, mutations are never retried, the token is sent only as a Bearer header, and a failed purchase tells you whether the outcome is unknown or refunded.
 
 ## Development
