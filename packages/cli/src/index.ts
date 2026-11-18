@@ -210,7 +210,7 @@ proxy
 
 proxy
   .command("whitelist <id> [ips...]")
-  .description("Replace the IP whitelist, Coronium Node proxies only (needs --yes)")
+  .description("Replace the IP whitelist on an eligible proxy (up to 10 entries, needs --yes)")
   .option("--yes", "confirm")
   .action((id: string, ips: string[], _options: Options, command: Command) => proxyWhitelistCommand(id, ips, withGlobals(command)));
 

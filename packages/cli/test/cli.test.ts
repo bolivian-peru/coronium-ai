@@ -67,6 +67,22 @@ describe("basics", () => {
     expect(result.stdout.trim()).toMatch(/^1\.0\.0 \(contract v3@/);
   });
 
+  it("shows a line warning with the renewal quote in text and JSON", async () => {
+    const warning = { modem_id: SAMPLE_PROXY._id, code: "NODE_LINE_NOT_SERVING", message: "This proxy has had no working connection for more than 24 hours." };
+    server.on("POST /payment/renewal-quote", () => ({
+      body: { currency: "USD", subtotal_usd: 49, discount_usd: 0, total_usd: 49, coupon: null,
+        line_items: [{ modem_id: SAMPLE_PROXY._id, days: 7, line_total_usd: 49 }], warnings: [warning] },
+    }));
+    const args = ["quote", "renew", `${SAMPLE_PROXY._id}:7`];
+    const text = await run(args);
+    expect(text.code).toBe(0);
+    expect(text.stdout).toContain(`${warning.modem_id}: ${warning.message}`);
+    const json = await run([...args, "--json"]);
+    expect(json.code).toBe(0);
+    expect(JSON.parse(json.stdout).warnings).toEqual([warning]);
+    expect(paymentPosts()).toBe(0);
+  });
+
   it("--help lists the real commands and no dead links", async () => {
     const result: RunResult = await run(["--help"]);
     for (const command of ["login", "init", "key:rotate", "balance", "tariffs", "stock", "proxy", "buy", "renew", "tickets", "webhook"]) {

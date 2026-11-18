@@ -3,9 +3,7 @@
 // approved (`expectedTotalUsd`).
 //
 // The approved total is checked against a fresh quote right before the order is
-// sent, and sent along as `max_total_usd`. Until the API enforces that field
-// itself, the check is a client-side pre-check: a price change between the quote
-// and the charge is still possible, so keep the window short.
+// sent. The API enforces the same ceiling from `max_total_usd` at charge time.
 
 import { createHash, randomUUID } from "node:crypto";
 import { CoroniumError } from "../errors.js";

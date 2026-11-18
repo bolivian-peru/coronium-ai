@@ -51,7 +51,7 @@ Catalog (no token needed):
 Account:
 - `coronium balance [--crypto]`: account credit, BTC and USDT. `--crypto` lists deposit addresses and creates the deposit wallets on first use.
 - `coronium payment <id>`
-- `coronium quote renew <id>:<days> ...`: price a renewal, read-only.
+- `coronium quote renew <id>:<days> ...` shows the renewal price and any advisory warnings for individual lines. It is read-only.
 
 Proxies (`<id>` can be the proxy id, its name or its port id):
 - `coronium proxy list`: HTTP and SOCKS5 URLs, exit IP, expiry.
@@ -61,7 +61,7 @@ Proxies (`<id>` can be the proxy id, its name or its port id):
 - `coronium proxy replace <id> --yes`: new host and credentials, uses one of 2 replacements per 24 hours.
 - `coronium proxy openvpn <id> [--tcp] [--out file.ovpn]`
 - `coronium proxy test <id>`
-- `coronium proxy whitelist <id> [ips...] --yes`: Coronium Node proxies only.
+- `coronium proxy whitelist <id> [ips...] --yes` replaces the entire list on a line that advertises IP whitelisting. Pass up to 10 entries. An empty list clears it.
 
 Support tickets:
 - `coronium tickets list [--status open]`
