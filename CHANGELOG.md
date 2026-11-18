@@ -4,12 +4,12 @@ All notable changes to the `coronium-ai` packages.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Pre-1.0, minor versions may break. Stable releases are on the `latest` npm tag; pre-release builds may appear on the `beta` / `alpha` tags.
 
-## Unreleased
+## [Unreleased]
+
+### SDK and CLI
 
 - The SDK validates the API limit of ten whitelist entries. The CLI and package guides describe availability from each owned proxy's capabilities.
 - Renewal quotes expose typed, optional per-line warnings. The CLI shows these advisories with the quoted price.
-
-## [Unreleased]
 
 ### Docs (3 Nov 2026, no package release)
 
