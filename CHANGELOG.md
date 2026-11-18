@@ -6,6 +6,11 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 
 ## [Unreleased]
 
+### SDK and CLI
+
+- The SDK validates the API limit of ten whitelist entries. The CLI and package guides describe availability from each owned proxy's capabilities.
+- Renewal quotes expose typed, optional per-line warnings. The CLI shows these advisories with the quoted price.
+
 ### Docs (3 Nov 2026, no package release)
 
 - MCP pointer: `coronium-proxy-mcp@2.4.2` is pinned in README.md, AGENTS.md, llms.txt, packages/mcp/README.md and apps/api/README.md, with the hosted servers `https://api.coronium.io/mcp` (OAuth sign-in, 22 tools, never spends) and `https://api.coronium.io/mcp/buyer` (15 tools, 20 when purchases are allowed).

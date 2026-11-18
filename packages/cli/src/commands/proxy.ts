@@ -184,7 +184,7 @@ export async function proxyTestCommand(identifier: string, options: GlobalOption
 }
 
 export async function proxyWhitelistCommand(identifier: string, ips: string[], options: ConfirmOptions): Promise<void> {
-  requireYes(options, "This replaces the proxy's whole IP whitelist (Coronium Node proxies only).");
+  requireYes(options, "This replaces the proxy's entire IP whitelist.");
   const client: Coronium = await makeClient({ requireToken: true });
   const proxy: OwnedProxy = await ownedProxy(client, identifier);
   const result = await client.proxies.setWhitelist(proxy._id, ips);
@@ -192,7 +192,7 @@ export async function proxyWhitelistCommand(identifier: string, ips: string[], o
     printJson(result);
     return;
   }
-  ok(`Whitelist for ${proxy.name} set to ${ips.length === 0 ? "empty" : ips.join(", ")}.`);
+  ok(`Whitelist update accepted for ${proxy.name}.`);
 }
 
 /** `proxy get` bought a proxy in 0.x. Refuse loudly instead of guessing. */

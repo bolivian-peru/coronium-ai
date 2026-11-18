@@ -133,6 +133,8 @@ export interface RenewalQuote {
   total_cents?: number;
   coupon: { name: string; value: string | number } | null;
   line_items: RenewalLine[];
+  /** Advisory messages for the affected lines. The renewal remains available. */
+  warnings?: Array<{ modem_id: string; code: string; message: string }>;
   [key: string]: unknown;
 }
 
@@ -179,6 +181,7 @@ export interface OwnedProxy {
   rotation_interval?: number;
   rotated_at?: number | null;
   white_list?: string[];
+  features?: { whitelist?: { available: boolean; [key: string]: unknown }; [key: string]: unknown };
   metadata?: string;
   /** Expiry in milliseconds since the epoch. */
   tariff_expired_at?: number;

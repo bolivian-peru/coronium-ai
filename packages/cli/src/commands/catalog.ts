@@ -1,7 +1,7 @@
 import kleur from "kleur";
 import type { AvailableTariff, BuyQuote, Coronium, Country, RenewalItem, RenewalQuote, StockEntry } from "coronium-sdk";
 import { makeClient } from "../client.js";
-import { field, isJson, parseCount, printJson, usd, UsageError, type GlobalOptions } from "../output.js";
+import { field, isJson, parseCount, printJson, usd, warn, UsageError, type GlobalOptions } from "../output.js";
 
 export interface TariffOptions extends GlobalOptions {
   country?: string;
@@ -127,6 +127,9 @@ export function printRenewalQuote(quote: RenewalQuote): void {
   console.log(kleur.bold("Renewal quote"));
   for (const line of quote.line_items) {
     field(line.name ?? line.modem_id, `${line.days} days  ${usd(line.line_total_usd)}`);
+  }
+  for (const warning of quote.warnings ?? []) {
+    warn(`${warning.modem_id}: ${warning.message}`);
   }
   if (quote.discount_usd > 0) field("discount", usd(quote.discount_usd));
   field("total", kleur.bold(usd(quote.total_usd)));

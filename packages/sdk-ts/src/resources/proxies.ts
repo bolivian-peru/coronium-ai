@@ -27,7 +27,7 @@ export interface OpenVpnOptions {
 
 const DEFAULT_WAIT_TIMEOUT_MS: number = 120_000;
 const DEFAULT_WAIT_INTERVAL_MS: number = 5_000;
-const MAX_WHITELIST_ENTRIES: number = 100;
+const MAX_WHITELIST_ENTRIES: number = 10;
 const FINAL_ROTATION_STATES: ReadonlySet<string> = new Set(["done", "failed", "idle"]);
 
 function sleep(ms: number): Promise<void> {
@@ -206,8 +206,8 @@ export class ProxiesResource {
   }
 
   /**
-   * Replace the IP whitelist. Supported on Coronium Node proxies only; other
-   * proxies answer `route_not_found` or 404.
+   * Replace the entire whitelist on an eligible line. Check the owned row for
+   * proxyEndpoints.capabilities.whitelist or features.whitelist.available.
    */
   async setWhitelist(modemId: string, ips: string[]): Promise<WhitelistResult> {
     assertWhitelist(ips);

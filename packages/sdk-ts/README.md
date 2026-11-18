@@ -53,7 +53,7 @@ Every method maps to one real `/api/v3` route, listed in `ROUTES`.
 - `tariffs()`: every plan, including ones with no stock.
 - `availableTariffs({ countryCode?, carrierId?, carrierName? })`: plans in stock, filtered client-side (the API ignores filters).
 - `stock({ countryCode?, carrierId? })`: stock counts by country, carrier and region, with names resolved.
-- `renewalQuote(items, coupon?)`: price a renewal of proxies you own. Read-only. Refuses a quote that leaves a proxy out or prices different days.
+- `renewalQuote(items, coupon?)`: price a renewal of proxies you own. Read-only. Refuses a quote that leaves a proxy out or prices different days. Show any `warnings[].message` with the price before requesting approval. Each advisory identifies the affected `modem_id`.
 
 **proxies**
 - `list()`, `get(idOrNameOrPortId)`: your proxies, with credentials (treat as secrets).
@@ -63,7 +63,7 @@ Every method maps to one real `/api/v3` route, listed in `ROUTES`.
 - `replace(id)`: swap for another modem. Irreversible: new host, new credentials, default quota 2 per 24 hours.
 - `openvpn(id, { proto? })`: profile text. Some providers issue a new certificate per call or allow one download.
 - `test(id)`: the API's connectivity check, as `{ ok, extIp, error }`.
-- `setWhitelist(id, ips)`: Coronium Node proxies only.
+- `setWhitelist(id, ips)` replaces the whole whitelist (up to 10 entries). Check `proxyEndpoints.capabilities.whitelist` or `features.whitelist.available` on the owned proxy. With neither capability, use the proxy login and password.
 
 **tickets**: `list()`, `get(id)`, `create({ subject, message, category?, relatedProxies? })`, `reply(id, message)`, `archive(id)` (hides, does not close). Staff-only fields are stripped from every response.
 

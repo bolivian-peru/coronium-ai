@@ -211,6 +211,13 @@ describe("proxies", () => {
     expect(result).toMatchObject({ ok: true, extIp: "4.4.4.4" });
   });
 
+  it("refuses an eleventh whitelist entry before sending the request", async () => {
+    const ips = Array.from({ length: 11 }, (_, index) => `192.0.2.${index + 1}`);
+    const error = await captureError(client.proxies.setWhitelist("m1", ips));
+    expect(error.code).toBe("invalid_argument");
+    expect(server.requests).toHaveLength(0);
+  });
+
   it("sets a whitelist with the white_list key", async () => {
     server.on("PUT /modems/:modem_id/set-white-list", () => ({ body: { result: "ok", data: ["1.2.3.4"] } }));
     await client.proxies.setWhitelist("m1", [" 1.2.3.4 "]);
