@@ -96,6 +96,31 @@ export interface StockRow {
   carrier_id: string;
   region_id: string | null;
   count: number;
+  /** How many of `count` a buy with `require: ["p0f"]` and this `region_id` can get. */
+  p0f_count?: number;
+  /**
+   * How many of `count` can serve OpenVPN. Guaranteed for a buy with this `region_id`
+   * only when equal to `count`. Since OpenAPI 3.3.16; optional for older servers.
+   */
+  openvpn_count?: number;
+  /** How many of `count` were last observed egressing on native IPv6. Guaranteed only when equal to `count`. Since 3.3.16. */
+  ipv6_count?: number;
+  /**
+   * How many of `count` are one-time rentals, never sold with `autoRenew: true`. Such an
+   * order can get at most `count - one_time_only_count` units here. Since 3.3.16.
+   */
+  one_time_only_count?: number;
+  /** Only where some unit declares a monthly data allowance. A note, not a limit. */
+  dataAllowanceNote?: StockAllowanceNote;
+}
+
+export interface StockAllowanceNote {
+  gbPerMonth: number;
+  text: string;
+  /** Units in the row that carry the note. */
+  count: number;
+  /** True when every unit carries it. */
+  all: boolean;
 }
 
 export interface StockEntry {
@@ -107,6 +132,16 @@ export interface StockEntry {
   regionId: string | null;
   regionName: string | null;
   count: number;
+  /** `p0f_count` of the row, when the server sends it. */
+  p0fCount?: number;
+  /** `openvpn_count` of the row (OpenAPI 3.3.16), when the server sends it. */
+  openvpnCount?: number;
+  /** `ipv6_count` of the row (OpenAPI 3.3.16), when the server sends it. */
+  ipv6Count?: number;
+  /** `one_time_only_count` of the row (OpenAPI 3.3.16), when the server sends it. */
+  oneTimeOnlyCount?: number;
+  /** `dataAllowanceNote` of the row, when present. */
+  dataAllowanceNote?: StockAllowanceNote;
 }
 
 export interface RenewalLine {

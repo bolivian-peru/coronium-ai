@@ -219,7 +219,11 @@
       "country_id": "60436110c991f968653db48f",
       "carrier_id": "61eff55b5a33f238ac15a8fe",
       "region_id": "69dfd68f741584845092c3d7",
-      "count": 10
+      "count": 10,
+      "p0f_count": 0,
+      "openvpn_count": 10,
+      "ipv6_count": 4,
+      "one_time_only_count": 2
     },
     {
       "country_id": "60b292a86f46de4a880f89d3",
@@ -240,5 +244,6 @@
       "count": 1
     }
   ],
+  "_note_3_3_16": "The first stock row also carries the OpenAPI 3.3.16 counts (p0f_count, openvpn_count, ipv6_count, one_time_only_count) with illustrative values; the US rows keep the older shape.",
   "_note": "Trimmed copy of the public catalog endpoints (/countries, /tariffs/available, /free-modems) captured 2026-10-17."
 }
