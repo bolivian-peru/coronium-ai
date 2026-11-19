@@ -91,6 +91,17 @@ describe("catalog", () => {
     ]);
   });
 
+  it("carries the 3.3.16 per-row feature counts only when the server sends them", async () => {
+    const [gb] = await client.catalog.stock({ countryCode: "GB" });
+    expect(gb).toMatchObject({ count: 10, p0fCount: 0, openvpnCount: 10, ipv6Count: 4, oneTimeOnlyCount: 2 });
+    const us = await client.catalog.stock({ countryCode: "US" });
+    expect(us.length).toBeGreaterThan(0);
+    for (const row of us) {
+      expect(Object.keys(row)).not.toContain("openvpnCount");
+      expect(Object.keys(row)).not.toContain("oneTimeOnlyCount");
+    }
+  });
+
   it("quotes a renewal and sends modems with modem_id and days", async () => {
     server.on("POST /payment/renewal-quote", (request) => {
       const body = request.body as { modems: Array<{ modem_id: string; days: number }> };

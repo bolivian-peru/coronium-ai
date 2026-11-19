@@ -59,7 +59,20 @@ function toStockEntry(row: StockRow, countries: Country[]): StockEntry {
     regionId: row.region_id ?? null,
     regionName: region?.name ?? null,
     count: row.count,
+    ...optionalCounts(row),
   };
+}
+
+// Additive row fields: copied only when the server sends them, so older servers
+// produce exactly the entries they did before.
+function optionalCounts(row: StockRow): Partial<StockEntry> {
+  const out: Partial<StockEntry> = {};
+  if (typeof row.p0f_count === "number") out.p0fCount = row.p0f_count;
+  if (typeof row.openvpn_count === "number") out.openvpnCount = row.openvpn_count;
+  if (typeof row.ipv6_count === "number") out.ipv6Count = row.ipv6_count;
+  if (typeof row.one_time_only_count === "number") out.oneTimeOnlyCount = row.one_time_only_count;
+  if (row.dataAllowanceNote) out.dataAllowanceNote = row.dataAllowanceNote;
+  return out;
 }
 
 function matchesStock(entry: StockEntry, filter: StockFilter): boolean {
