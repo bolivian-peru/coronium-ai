@@ -1,0 +1,39 @@
+[workspace]
+resolver = "3"
+members = ["proto", "coordinator", "harness"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+license = "Apache-2.0"
+repository = "https://github.com/bolivian-peru/coronium-ai"
+publish = false
+
+# Shared versions live here so every crate builds against the same ones.
+# A crate turns on the tokio features it needs in its own manifest.
+[workspace.dependencies]
+coronium-proto = { path = "proto" }
+bytes = "1.12"
+hex = "0.4"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+sha2 = "0.11"
+sqlx = { version = "0.9", default-features = false, features = [
+    "runtime-tokio",
+    "tls-rustls-ring",
+    "postgres",
+    "uuid",
+    "migrate",
+    "macros",
+] }
+thiserror = "2"
+tokio = "1.54"
+uuid = { version = "1.29", features = ["v4"] }
+
+[workspace.lints.rust]
+unsafe_code = "forbid"
+
+# Panics unwind (the default) so that a panic in one task never ends the process.
+[profile.release]
+lto = "thin"
+codegen-units = 1

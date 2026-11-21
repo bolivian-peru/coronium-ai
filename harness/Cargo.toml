@@ -1,0 +1,31 @@
+[package]
+name = "coronium-harness"
+description = "The proof harness: a simulated device and a load generator."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+publish.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+bytes.workspace = true
+coronium-proto.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+sha2.workspace = true
+sysinfo = { version = "0.39", default-features = false, features = ["system"] }
+thiserror.workspace = true
+tokio = { workspace = true, features = [
+    "io-util",
+    "macros",
+    "net",
+    "rt-multi-thread",
+    "sync",
+    "time",
+] }
+
+[dev-dependencies]
+hex.workspace = true
